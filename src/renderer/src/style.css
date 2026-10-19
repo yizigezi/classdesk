@@ -1,0 +1,50 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  font-family:
+    'MiSans',
+    'Source Han Sans SC',
+    'Noto Sans CJK SC',
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333333;
+  background: #eef0f4;
+}
+
+/* 外壳根节点重新声明字体/颜色：PPTist 的全局样式（body 字体、颜色、元素 reset）
+   会泄漏到 document 级，这里在外壳作用域内兜底，保证外壳外观不变 */
+.shell-root {
+  font-family:
+    'MiSans',
+    'Source Han Sans SC',
+    'Noto Sans CJK SC',
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333333;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
