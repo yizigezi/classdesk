@@ -2,12 +2,13 @@
   "name": "classdesk",
   "version": "0.1.0",
   "description": "课堂桌面工具",
+  "author": "yizigezi",
   "private": true,
   "main": "./out/main/index.js",
   "build": {
     "appId": "cn.yizigezi.classdesk",
     "productName": "classdesk",
-    "artifactName": "classdesk-win32-x64-${version}-${target}.${ext}",
+    "artifactName": "classdesk-win32-x64-${version}.${ext}",
     "directories": {
       "output": "dist-test",
       "buildResources": ".tmp/build-resources"
@@ -37,9 +38,6 @@
     },
     "portable": {
       "artifactName": "classdesk-win32-x64-${version}-portable.${ext}"
-    },
-    "zip": {
-      "artifactName": "classdesk-win32-x64-${version}.${ext}"
     }
   },
   "scripts": {
