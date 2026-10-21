@@ -6,11 +6,13 @@ import PagedShell from './components/PagedShell.vue'
 import BottomBar from './components/BottomBar.vue'
 import { useModuleStore } from '@/stores/module'
 
-// 演示模块（PPTist）整体懒加载，不进首屏 bundle
+// 演示模块整体懒加载，不进首屏 bundle
 const PptistHost = defineAsyncComponent(() => import('./pptist/PptistHost.vue'))
+const PptxViewerHost = defineAsyncComponent(() => import('./pptx/PptxViewerHost.vue'))
 
 const moduleStore = useModuleStore()
-const { activeModule, pptistActivated, pptistReady } = storeToRefs(moduleStore)
+const { activeModule, pptistActivated, pptistReady, pptxActivated, pptxReady } =
+  storeToRefs(moduleStore)
 
 const wallpaper = ref('')
 
@@ -65,4 +67,14 @@ onMounted(async () => {
 
   <!-- PPTist 全窗口覆盖视图：挂载一次后常驻，返回外壳仅隐藏（保留编辑内容） -->
   <PptistHost v-if="pptistActivated" v-show="activeModule === 'pptist'" />
+
+  <div
+    v-if="activeModule === 'pptx' && !pptxReady"
+    class="fixed inset-0 z-40 flex items-center justify-center bg-[#22262e] text-[15px] text-white/90"
+  >
+    正在加载演示模块…
+  </div>
+
+  <!-- 动画放映（pptx-vue-viewer）：同样挂载常驻、返回外壳仅隐藏（保留打开的课件与当前页） -->
+  <PptxViewerHost v-if="pptxActivated" v-show="activeModule === 'pptx'" />
 </template>

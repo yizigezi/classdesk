@@ -41,7 +41,7 @@ const moduleStore = useModuleStore()
 
       <button
         class="no-drag grid h-[72px] w-[72px] shrink-0 place-items-center rounded-pill bg-ink-900 text-[13px] font-medium text-white transition hover:bg-ink-700"
-        @click="moduleStore.openPptist()"
+        @click="moduleStore.openPptx()"
       >
         开始演示
       </button>
