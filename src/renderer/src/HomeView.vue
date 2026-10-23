@@ -2,11 +2,11 @@
 import { storeToRefs } from 'pinia'
 import SvgIcon from './components/SvgIcon.vue'
 import { useAppStore } from '@/stores/app'
-import { useModuleStore } from '@/stores/module'
+import { useShellStore } from '@/stores/shell'
 
 const store = useAppStore()
 const { timeLabel, dateLabel } = storeToRefs(store)
-const moduleStore = useModuleStore()
+const shell = useShellStore()
 
 const nextLesson = {
   tag: '下一节',
@@ -41,7 +41,7 @@ const nextLesson = {
 
     <button
       class="no-drag mt-10 flex h-16 w-[280px] items-center justify-center gap-2.5 rounded-pill bg-white/95 text-[18px] font-medium text-ink-900 shadow-card transition hover:bg-white"
-      @click="moduleStore.openPptx()"
+      @click="shell.openApp('pptx')"
     >
       <SvgIcon name="slide" class="h-5 w-5" />
       开始演示

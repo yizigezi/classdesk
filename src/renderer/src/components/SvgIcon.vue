@@ -90,6 +90,26 @@ defineProps<{
       <path d="M7 6.8v10.4" />
     </template>
 
+    <template v-else-if="name === 'home'">
+      <path d="M4.5 10.6L12 4.5l7.5 6.1" />
+      <path d="M6.5 9.4v9.3h11V9.4" />
+      <path d="M10 18.7v-5h4v5" />
+    </template>
+
+    <template v-else-if="name === 'back'">
+      <path d="M19 12H5.5" />
+      <path d="M11 5.5L4.8 12l6.2 6.5" />
+    </template>
+
+    <template v-else-if="name === 'play'">
+      <path d="M8.5 5.6l10 6.4-10 6.4z" fill="currentColor" stroke="none" />
+    </template>
+
+    <template v-else-if="name === 'exit'">
+      <rect x="4.5" y="5.5" width="15" height="13" rx="2" />
+      <path d="M9 12h6" />
+    </template>
+
     <template v-else>
       <path d="M9.2 6.8L14.8 12l-5.6 5.2" />
       <path d="M17 6.8v10.4" />

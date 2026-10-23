@@ -7,12 +7,17 @@ import {
 } from 'unocss'
 
 export default defineConfig({
-  // 只扫描外壳源码，不扫 vendor/pptist（PPTist 自带样式体系）
+  // 只扫描外壳源码
   content: {
     filesystem: ['src/renderer/index.html', 'src/renderer/src/**/*.{html,js,ts,jsx,tsx,vue}']
   },
   presets: [presetWind(), presetAttributify()],
   transformers: [transformerDirectives(), transformerVariantGroup()],
+  // 懒加载的演示引擎自带同名工具类（.h-16 等，定义还不同），样式随 chunk 后注入会盖掉壳层；
+  // 这里给壳层工具类抬一级优先级（:not(#_) 的选择器特异性），互不打架
+  postprocess: (util) => {
+    if (util.selector) util.selector = util.selector.split(',').map((s) => `${s}:not(#_)`).join(',')
+  },
   theme: {
     colors: {
       ink: {

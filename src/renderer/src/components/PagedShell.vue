@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import HomeView from '@/HomeView.vue'
 import DeskTopView from '@/DeskTopView.vue'
 import { useAppStore } from '@/stores/app'
-import { useModuleStore } from '@/stores/module'
+import { useShellStore } from '@/stores/shell'
 
 interface Page {
   key: string
@@ -19,10 +19,10 @@ const pages: Page[] = [
 
 const store = useAppStore()
 const { pageIndex } = storeToRefs(store)
-const moduleStore = useModuleStore()
+const shell = useShellStore()
 
 function inShell(): boolean {
-  return moduleStore.activeModule === 'shell'
+  return shell.activeApp === 'launcher'
 }
 
 const initialPage = new URLSearchParams(window.location.search).get('page')

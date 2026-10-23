@@ -4,15 +4,22 @@ import { storeToRefs } from 'pinia'
 import TitleBar from './components/TitleBar.vue'
 import PagedShell from './components/PagedShell.vue'
 import BottomBar from './components/BottomBar.vue'
-import { useModuleStore } from '@/stores/module'
+import AppLoading from './components/AppLoading.vue'
+import AppError from './components/AppError.vue'
+import { useShellStore } from '@/stores/shell'
 
-// 演示模块整体懒加载，不进首屏 bundle
-const PptistHost = defineAsyncComponent(() => import('./pptist/PptistHost.vue'))
-const PptxViewerHost = defineAsyncComponent(() => import('./pptx/PptxViewerHost.vue'))
+// —— 壳层：顶栏 / 底栏常驻（底栏左端 = 系统导航），应用只占中间区域 ——
+// 应用整体懒加载，不进首屏 bundle；加载中有占位、失败可重试，不再白屏
+const PptxApp = defineAsyncComponent({
+  loader: () => import('./apps/pptx/PptxApp.vue'),
+  loadingComponent: AppLoading,
+  errorComponent: AppError,
+  delay: 120,
+  timeout: 120000
+})
 
-const moduleStore = useModuleStore()
-const { activeModule, pptistActivated, pptistReady, pptxActivated, pptxReady } =
-  storeToRefs(moduleStore)
+const shell = useShellStore()
+const { activeApp, activated } = storeToRefs(shell)
 
 const wallpaper = ref('')
 
@@ -42,39 +49,37 @@ onMounted(async () => {
   } catch {
     wallpaper.value = ''
   }
+
+  // 演示模块的引擎包很大：首屏稳定后空闲预取，等老师点「开始演示」时已经就位
+  const warm = (): void => {
+    void import('./apps/pptx/PptxApp.vue').catch(() => {})
+  }
+  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: unknown) => void })
+    .requestIdleCallback
+  if (typeof idle === 'function') idle(warm, { timeout: 8000 })
+  else window.setTimeout(warm, 2500)
 })
 </script>
 
 <template>
   <div
-    v-show="activeModule === 'shell'"
     class="shell-root relative flex h-full w-full flex-col overflow-hidden"
     :style="wallpaper ? wallpaperStyle(wallpaper) : fallbackStyle"
   >
     <TitleBar />
 
-    <PagedShell />
+    <div class="flex min-h-0 flex-1">
+      <main class="relative min-h-0 flex-1 overflow-hidden">
+        <!-- 启动器（桌面） -->
+        <div v-show="activeApp === 'launcher'" class="absolute inset-0 flex flex-col">
+          <PagedShell />
+        </div>
+
+        <!-- 应用区：挂载一次常驻，返回桌面仅隐藏（保留应用内状态） -->
+        <PptxApp v-if="activated.pptx" v-show="activeApp === 'pptx'" />
+      </main>
+    </div>
 
     <BottomBar />
   </div>
-
-  <div
-    v-if="activeModule === 'pptist' && !pptistReady"
-    class="fixed inset-0 z-40 flex items-center justify-center bg-[#414a5e] text-[15px] text-white/90"
-  >
-    正在加载演示模块…
-  </div>
-
-  <!-- PPTist 全窗口覆盖视图：挂载一次后常驻，返回外壳仅隐藏（保留编辑内容） -->
-  <PptistHost v-if="pptistActivated" v-show="activeModule === 'pptist'" />
-
-  <div
-    v-if="activeModule === 'pptx' && !pptxReady"
-    class="fixed inset-0 z-40 flex items-center justify-center bg-[#22262e] text-[15px] text-white/90"
-  >
-    正在加载演示模块…
-  </div>
-
-  <!-- 动画放映（pptx-vue-viewer）：同样挂载常驻、返回外壳仅隐藏（保留打开的课件与当前页） -->
-  <PptxViewerHost v-if="pptxActivated" v-show="activeModule === 'pptx'" />
 </template>

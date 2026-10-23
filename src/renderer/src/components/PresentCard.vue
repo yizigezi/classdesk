@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import CardShell from './CardShell.vue'
-import { useModuleStore } from '@/stores/module'
+import { useShellStore } from '@/stores/shell'
 
-const moduleStore = useModuleStore()
+const shell = useShellStore()
 </script>
 
 <template>
@@ -41,7 +41,7 @@ const moduleStore = useModuleStore()
 
       <button
         class="no-drag grid h-[72px] w-[72px] shrink-0 place-items-center rounded-pill bg-ink-900 text-[13px] font-medium text-white transition hover:bg-ink-700"
-        @click="moduleStore.openPptx()"
+        @click="shell.openApp('pptx')"
       >
         开始演示
       </button>

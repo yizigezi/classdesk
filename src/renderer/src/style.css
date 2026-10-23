@@ -20,8 +20,8 @@ body {
   background: #eef0f4;
 }
 
-/* 外壳根节点重新声明字体/颜色：PPTist 的全局样式（body 字体、颜色、元素 reset）
-   会泄漏到 document 级，这里在外壳作用域内兜底，保证外壳外观不变 */
+/* 外壳根节点重新声明字体/颜色，防止懒加载应用的全局样式（reset、字体）
+   泄漏到 document 级后影响外壳外观 */
 .shell-root {
   font-family:
     'MiSans',
@@ -47,4 +47,29 @@ body {
 
 .no-drag {
   -webkit-app-region: no-drag;
+}
+
+/* 常驻栏（顶栏 / 底栏 / 系统导航栏）统一的深色玻璃底：
+   图标与文字放在固定深底上，不再依赖壁纸颜色，可见度稳定 */
+.bar-glass {
+  background: rgba(18, 21, 27, 0.46);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+}
+
+/* 栏内操作项统一手感 */
+.bar-item {
+  color: rgba(255, 255, 255, 0.92);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.bar-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.bar-item:disabled {
+  opacity: 0.38;
 }

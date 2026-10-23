@@ -14,3 +14,7 @@ export type IconName =
   | 'chevron-right'
   | 'prev'
   | 'next'
+  | 'home'
+  | 'back'
+  | 'play'
+  | 'exit'
