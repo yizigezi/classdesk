@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import TitleBar from './components/TitleBar.vue'
 import PagedShell from './components/PagedShell.vue'
 import BottomBar from './components/BottomBar.vue'
+import Launchpad from './components/Launchpad.vue'
+import ExternalAppFrame from './components/ExternalAppFrame.vue'
 import AppLoading from './components/AppLoading.vue'
 import AppError from './components/AppError.vue'
 import { useShellStore } from '@/stores/shell'
+import { useRegistryStore } from '@/stores/registry'
+import type { InstalledApp } from '@/platform/contract'
 
-// —— 壳层：顶栏 / 底栏常驻（底栏左端 = 系统导航），应用只占中间区域 ——
+// —— 壳层：顶栏 / 底栏常驻（底栏 = 系统导航 + 任务栏 + 实时操作），应用只占中间区域 ——
 // 应用整体懒加载，不进首屏 bundle；加载中有占位、失败可重试，不再白屏
 const PptxApp = defineAsyncComponent({
   loader: () => import('./apps/pptx/PptxApp.vue'),
@@ -19,7 +23,15 @@ const PptxApp = defineAsyncComponent({
 })
 
 const shell = useShellStore()
-const { activeApp, activated } = storeToRefs(shell)
+const { activeApp, activated, launchpadOpen, runningApps } = storeToRefs(shell)
+const registry = useRegistryStore()
+
+// apps/ 仓库里的外部应用：挂载一次常驻（iframe），返回桌面仅隐藏
+const externalApps = computed<InstalledApp[]>(() =>
+  runningApps.value
+    .map((id) => registry.byId(id))
+    .filter((app): app is InstalledApp => !!app && !app.builtin)
+)
 
 const wallpaper = ref('')
 
@@ -43,6 +55,9 @@ function wallpaperStyle(url: string): Record<string, string> {
 }
 
 onMounted(async () => {
+  // 应用仓库：启动扫描 apps/ 目录（安装的外部应用）
+  void registry.refresh()
+
   try {
     const url = await window.desk?.wallpaperToday()
     if (url) wallpaper.value = url
@@ -77,6 +92,17 @@ onMounted(async () => {
 
         <!-- 应用区：挂载一次常驻，返回桌面仅隐藏（保留应用内状态） -->
         <PptxApp v-if="activated.pptx" v-show="activeApp === 'pptx'" />
+
+        <!-- apps/ 仓库里的外部应用 -->
+        <ExternalAppFrame
+          v-for="app in externalApps"
+          :key="app.id"
+          v-show="activeApp === app.id"
+          :app="app"
+        />
+
+        <!-- 应用列表（Launchpad）：盖住中间区域，顶/底栏保持可见 -->
+        <Launchpad v-if="launchpadOpen" />
       </main>
     </div>
 

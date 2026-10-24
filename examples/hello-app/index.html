@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>示例应用</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family: 'MiSans', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui,
+          sans-serif;
+        background: #f4f6fa;
+        color: #22262e;
+      }
+      .wrap {
+        box-sizing: border-box;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      p {
+        margin: 0;
+        font-size: 13px;
+        color: #6b7280;
+      }
+      .card {
+        margin-top: 14px;
+        padding: 14px 20px;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(30, 40, 60, 0.08);
+        font-size: 13px;
+        line-height: 1.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>示例应用</h1>
+      <p>这个页面跑在 classdesk-app 协议的 iframe 里</p>
+      <div class="card">
+        应用包 = 文件夹：<br />
+        manifest.json（id / 名称 / 版本 / 图标 / 入口 / 权限声明）<br />
+        index.html（入口页面，纯前端，可用任意框架打包产物）
+      </div>
+    </div>
+  </body>
+</html>

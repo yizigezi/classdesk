@@ -1,0 +1,10 @@
+{
+  "id": "hello-app",
+  "name": "示例应用",
+  "version": "0.1.0",
+  "icon": "apps",
+  "entry": "index.html",
+  "description": "应用包示例：manifest.json + 入口页面，装进 apps/ 就能跑",
+  "author": "yizigezi",
+  "permissions": []
+}

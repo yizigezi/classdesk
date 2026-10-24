@@ -110,6 +110,34 @@ defineProps<{
       <path d="M9 12h6" />
     </template>
 
+    <template v-else-if="name === 'apps'">
+      <rect x="4" y="4" width="6" height="6" rx="1.6" />
+      <rect x="14" y="4" width="6" height="6" rx="1.6" />
+      <rect x="4" y="14" width="6" height="6" rx="1.6" />
+      <rect x="14" y="14" width="6" height="6" rx="1.6" />
+    </template>
+
+    <template v-else-if="name === 'usb'">
+      <rect x="3.2" y="7.6" width="17.6" height="8.8" rx="2.2" />
+      <circle cx="17" cy="12" r="1" fill="currentColor" stroke="none" />
+      <path d="M6.5 11h5M6.5 13.6h3" />
+    </template>
+
+    <template v-else-if="name === 'plus'">
+      <path d="M12 5.5v13M5.5 12h13" />
+    </template>
+
+    <template v-else-if="name === 'close'">
+      <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+    </template>
+
+    <template v-else-if="name === 'trash'">
+      <path d="M4.5 7h15" />
+      <path d="M9.5 7V5.6A1.6 1.6 0 0 1 11.1 4h1.8a1.6 1.6 0 0 1 1.6 1.6V7" />
+      <path d="M6.5 7l.9 11.6a1.7 1.7 0 0 0 1.7 1.6h5.8a1.7 1.7 0 0 0 1.7-1.6L17.5 7" />
+      <path d="M10.2 10.8v6M13.8 10.8v6" />
+    </template>
+
     <template v-else>
       <path d="M9.2 6.8L14.8 12l-5.6 5.2" />
       <path d="M17 6.8v10.4" />

@@ -8,7 +8,8 @@ const { timeLabel } = storeToRefs(store)
 </script>
 
 <template>
-  <header class="drag bar-glass z-20 flex h-11 shrink-0 items-center justify-between border-b border-white/10 px-4">
+  <!-- 顶栏 48px（底栏 72px 的 2/3） -->
+  <header class="drag bar-glass z-20 flex h-12 shrink-0 items-center justify-between border-b border-white/10 px-4">
     <div class="flex items-center gap-2.5">
       <span
         class="h-5 w-5 rounded-full border border-white/45 bg-gradient-to-br from-white/50 to-white/10"

@@ -22,7 +22,7 @@ const loading = ref(false)
 const slideIndex = ref(0)
 const slideCount = ref(0)
 const mode = ref('edit')
-const showToolbar = ref(false) // 批注工具栏（编辑功能区）
+const showToolbar = ref(false) // 编辑功能区（Office 风格功能区，含绘图/批注工具）
 
 const slideLabel = computed(() =>
   content.value ? `${slideIndex.value + 1} / ${Math.max(slideCount.value, 1)}` : '未打开课件'
@@ -50,8 +50,8 @@ const rightActions = computed<ShellAction[]>(() => [
     onClick: () => viewer.value?.goNext()
   },
   {
-    id: 'annotate',
-    label: '批注',
+    id: 'edit-pane',
+    label: '编辑',
     icon: 'pen',
     active: showToolbar.value,
     disabled: !content.value,
@@ -77,7 +77,17 @@ watch(
   { immediate: true }
 )
 
-onBeforeUnmount(() => shell.unregisterActions('pptx'))
+// 放映只在中间区域显示：拦掉放映引擎的全屏接管，
+// 顶/底栏保持常驻可见，底栏就是放映工具栏
+function onFullscreenChange(): void {
+  if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
+}
+
+document.addEventListener('fullscreenchange', onFullscreenChange)
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange)
+  shell.unregisterActions('pptx')
+})
 
 // —— 文件载入 ——
 function onPick(event: Event): void {
@@ -232,4 +242,7 @@ select-auto,
   user-select: auto;
   -webkit-user-select: auto;
 }
+
+/* 放映保持在中间区域（壳层约定，见 style.css 的 .pptx-vue-presentation 规则）：
+   放映容器固定在顶栏与底栏之间，顶/底栏常驻可见，底栏即放映工具栏 */
 </style>

@@ -1,12 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { IconName } from '../icons'
-
-export interface QuickItem {
-  id: string
-  label: string
-  icon: IconName
-}
 
 function formatDate(): string {
   const now = new Date()
@@ -22,16 +15,6 @@ function formatTime(): string {
 export const useAppStore = defineStore('app', () => {
   const theme = ref<'light' | 'dark'>('light')
 
-  const quickItems = ref<QuickItem[]>([
-    { id: 'present', label: '演示', icon: 'slide' },
-    { id: 'doc', label: '文稿', icon: 'doc' },
-    { id: 'sheet', label: '表格', icon: 'sheet' },
-    { id: 'annotate', label: '批注', icon: 'pen' },
-    { id: 'setting', label: '设置', icon: 'setting' }
-  ])
-
-  const activeQuickId = ref<string>('present')
-
   const pageIndex = ref(0)
 
   const dateLabel = ref(formatDate())
@@ -41,10 +24,6 @@ export const useAppStore = defineStore('app', () => {
     timeLabel.value = formatTime()
   }, 1000)
   void timer
-
-  function setActiveQuick(id: string): void {
-    activeQuickId.value = id
-  }
 
   function setTheme(next: 'light' | 'dark'): void {
     theme.value = next
@@ -56,12 +35,9 @@ export const useAppStore = defineStore('app', () => {
 
   return {
     theme,
-    quickItems,
-    activeQuickId,
     pageIndex,
     dateLabel,
     timeLabel,
-    setActiveQuick,
     setPage,
     setTheme
   }
