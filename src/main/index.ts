@@ -44,7 +44,8 @@ async function fetchWallpaperUrl(): Promise<string | null> {
 // 权限系统暂未启用（渲染层 platform/permissions.ts 预留接口），manifest 里的
 // permissions 字段照常读取、透传给渲染层。
 
-const APP_ID_RE = /^[a-z0-9][a-z0-9_-]*$/i
+// id 约定：小写字母/数字/分段（建议包名风格，如 cn.yizigezi.hello）
+const APP_ID_RE = /^[a-z0-9]+([._-][a-z0-9]+)*$/
 /** 保留 id：壳层自己用，外部应用不得占用。 */
 const RESERVED_APP_IDS = new Set(['launcher', 'pptx'])
 
@@ -117,7 +118,9 @@ function scanApps(): InstalledApp[] {
 }
 
 function assertSafeAppId(id: unknown): asserts id is string {
-  if (typeof id !== 'string' || !APP_ID_RE.test(id)) throw new Error(`非法应用 id：${String(id)}`)
+  if (typeof id !== 'string' || !APP_ID_RE.test(id)) {
+    throw new Error(`非法应用 id：${String(id)}（用小写包名风格，如 cn.yizigezi.hello）`)
+  }
 }
 
 async function installAppFromDir(src: string): Promise<InstalledApp> {
@@ -159,33 +162,41 @@ function fakeDrives(): DriveInfo[] {
 }
 
 async function windowsDrives(): Promise<DriveInfo[]> {
-  const ps =
-    'Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 } | ' +
-    'Select-Object DeviceID,VolumeName | ConvertTo-Json -Compress'
-  const { stdout } = await execFileAsync('powershell', ['-NoProfile', '-Command', ps], {
-    windowsHide: true
-  })
-  const text = stdout.trim()
-  if (!text) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(text)
-  } catch {
-    return []
+  // 卷标可能是中文：卷标一律 Base64 回传，绕开 PowerShell 控制台编码坑；
+  // 可移动磁盘（DriveType=2）和 USB 接口磁盘（U 盘/移动硬盘）都算
+  const script = [
+    '$map = @{}',
+    'Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 } | ForEach-Object { $map[[string]$_.DeviceID] = [string]$_.VolumeName }',
+    'Get-Disk | Where-Object { $_.BusType -eq "USB" } | ForEach-Object { Get-Partition -DiskNumber $_.Number } | Where-Object { $_.DriveLetter } | ForEach-Object {',
+    '  $id = [string]$_.DriveLetter + ":"',
+    '  if (-not $map.ContainsKey($id)) {',
+    '    $label = ""',
+    '    try { $label = [string](Get-Volume -DriveLetter $_.DriveLetter).VolumeLabel } catch {}',
+    '    $map[$id] = $label',
+    '  }',
+    '}',
+    '$map.GetEnumerator() | ForEach-Object { $_.Key + "|" + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_.Value)) }'
+  ].join('\n')
+
+  const { stdout } = await execFileAsync(
+    'powershell',
+    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
+    { windowsHide: true, encoding: 'utf8', maxBuffer: 1024 * 1024 }
+  )
+
+  const out: DriveInfo[] = []
+  for (const line of stdout.split(/\r?\n/)) {
+    const [root, b64] = line.trim().split('|')
+    if (!root || !/^[A-Za-z]:$/.test(root)) continue
+    let label = ''
+    try {
+      label = Buffer.from(b64 ?? '', 'base64').toString('utf8').trim()
+    } catch {
+      label = ''
+    }
+    out.push({ id: root, label: label || root, path: root.endsWith('\\') ? root : `${root}\\` })
   }
-  const rows = Array.isArray(parsed) ? parsed : [parsed]
-  return rows
-    .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
-    .map((r) => {
-      const root = String(r.DeviceID ?? '')
-      const name = String(r.VolumeName ?? '').trim()
-      return {
-        id: root,
-        label: name || root,
-        path: root.endsWith('\\') ? root : `${root}\\`
-      }
-    })
-    .filter((d) => d.id)
+  return out
 }
 
 async function linuxDrives(): Promise<DriveInfo[]> {
@@ -222,8 +233,9 @@ async function listRemovableDrives(): Promise<DriveInfo[]> {
   try {
     if (process.platform === 'win32') return await windowsDrives()
     if (process.platform === 'linux') return await linuxDrives()
-  } catch {
-    // 枚举失败按无设备处理，不打断界面
+  } catch (err) {
+    // 枚举失败按无设备处理，不打断界面（方便排查：留一条日志）
+    console.warn('[drives] enumerate failed:', (err as Error).message)
   }
   return []
 }

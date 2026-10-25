@@ -13,8 +13,8 @@ classdesk 的应用分两种：
 ## 应用包结构
 
 ```
-my-app/
-├── manifest.json   # 必需，id 必须和文件夹名一致
+my-app/                      # 文件夹名 = manifest.id
+├── manifest.json   # 必需
 ├── index.html      # 入口页面（manifest.entry 可改）
 ├── icon.png        # 可选，图标（也可以在 manifest.icon 里写内置图标名）
 └── …               # 任意前端资源
@@ -24,7 +24,7 @@ my-app/
 
 ```json
 {
-  "id": "my-app",
+  "id": "cn.yizigezi.my-app",
   "name": "我的应用",
   "version": "0.1.0",
   "icon": "icon.png",
@@ -35,7 +35,7 @@ my-app/
 }
 ```
 
-- `id`：字母/数字/`-`/`_`，首字符为字母或数字；`launcher`、`pptx` 为系统保留。
+- `id`：**小写包名风格**（反向域名，如 `cn.yizigezi.my-app`），字母/数字/`.`/`-`/`_` 分段；文件夹名必须与 id 一致；`launcher`、`pptx` 为系统保留。
 - `icon`：内置图标名（见 `src/renderer/src/icons.ts`），或应用包内的图片文件名。
 - `permissions`：权限声明（见下）。
 

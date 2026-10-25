@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { PowerPointViewer, type PowerPointViewerExpose } from 'pptx-vue-viewer'
 import 'pptx-vue-viewer/styles'
 import SvgIcon from '@/components/SvgIcon.vue'
@@ -14,6 +14,7 @@ const shell = useShellStore()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const viewer = ref<PowerPointViewerExpose | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
 
 const content = ref<Uint8Array | null>(null)
 const fileName = ref('')
@@ -83,9 +84,86 @@ function onFullscreenChange(): void {
   if (document.fullscreenElement) void document.exitFullscreen().catch(() => {})
 }
 
-document.addEventListener('fullscreenchange', onFullscreenChange)
+// —— 放映等比缩放 ——
+// 引擎按窗口宽算 16:9 铺满（演示容器 teleport 到 body、还会溢出顶/底栏），
+// 这里把演示画布等比缩回中间区域：顶/底栏不再被盖住，底栏翻页也点得到
+let fitRaf = 0
+let fitTimer = 0
+
+function fitPresentation(): void {
+  const container = document.querySelector<HTMLElement>('.pptx-vue-presentation')
+  const frame = document.querySelector<HTMLElement>('.pptx-vue-presentation-frame')
+  if (!container || !frame) return
+  const k = Math.min(
+    container.clientWidth / (frame.offsetWidth || 1),
+    container.clientHeight / (frame.offsetHeight || 1),
+    1
+  )
+  // 缩放系数走 CSS 变量：引擎会重写演示画布的 inline style，
+  // 挂在 documentElement 上它管不着（样式规则见 style.css）
+  document.documentElement.style.setProperty('--pres-scale', String(k))
+}
+
+function scheduleFit(): void {
+  cancelAnimationFrame(fitRaf)
+  fitRaf = requestAnimationFrame(fitPresentation)
+}
+
+function startFitting(): void {
+  // 进放映后引擎才挂演示容器：先短轮询到容器挂上，之后靠 resize 重算
+  window.clearInterval(fitTimer)
+  let tries = 0
+  fitTimer = window.setInterval(() => {
+    tries += 1
+    fitPresentation()
+    if (document.querySelector('.pptx-vue-presentation-frame') || tries > 40) {
+      window.clearInterval(fitTimer)
+      fitTimer = 0
+    }
+  }, 150)
+}
+
+watch(mode, (m) => {
+  if (m === 'present') startFitting()
+})
+
+// —— 解析失败兜底（解耦）——
+// 引擎解析失败时只在自己画布里画错误态（@error 不一定触发），
+// 这里监听它的错误态、接上壳层自己的「重试 / 换个文件」，不让应用卡死
+let errorObserver: MutationObserver | null = null
+
+function watchEngineErrors(root: HTMLElement): void {
+  errorObserver = new MutationObserver(() => {
+    if (errorMsg.value) return
+    const errEl = document.querySelector<HTMLElement>('.pptx-vue-error')
+    if (!errEl) return
+    loading.value = false
+    const detail = errEl.innerText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 2)
+      .join(' ')
+    errorMsg.value = detail ? `课件解析失败：${detail}` : '课件解析失败'
+  })
+  errorObserver.observe(root, { childList: true, subtree: true })
+}
+
+onMounted(() => {
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  window.addEventListener('resize', scheduleFit)
+  const root = rootEl.value
+  if (root) watchEngineErrors(root)
+})
+
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', onFullscreenChange)
+  window.removeEventListener('resize', scheduleFit)
+  cancelAnimationFrame(fitRaf)
+  window.clearInterval(fitTimer)
+  document.documentElement.style.removeProperty('--pres-scale')
+  errorObserver?.disconnect()
+  errorObserver = null
   shell.unregisterActions('pptx')
 })
 
@@ -152,6 +230,7 @@ function closeFile(): void {
 
 <template>
   <div
+    ref="rootEl"
     class="absolute inset-0 select-auto overflow-hidden bg-[#22262e]"
     @dragover.prevent
     @drop.prevent="onDrop"

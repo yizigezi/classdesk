@@ -86,3 +86,10 @@ body {
   width: auto !important;
   height: auto !important;
 }
+
+/* 演示画布等比缩放：引擎按窗口宽算 16:9（会溢出顶/底栏），
+   缩放系数由 PptxApp 按中间区域实测算好，挂在 CSS 变量上 */
+.pptx-vue-presentation-frame {
+  transform: scale(var(--pres-scale, 1)) !important;
+  transform-origin: center center !important;
+}
