@@ -1,36 +1,25 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import TitleBar from './components/TitleBar.vue'
 import PagedShell from './components/PagedShell.vue'
 import BottomBar from './components/BottomBar.vue'
 import Launchpad from './components/Launchpad.vue'
 import ExternalAppFrame from './components/ExternalAppFrame.vue'
-import AppLoading from './components/AppLoading.vue'
-import AppError from './components/AppError.vue'
 import { useShellStore } from '@/stores/shell'
 import { useRegistryStore } from '@/stores/registry'
-import type { InstalledApp } from '@/platform/contract'
 
 // —— 壳层：顶栏 / 底栏常驻（底栏 = 系统导航 + 任务栏 + 实时操作），应用只占中间区域 ——
-// 应用整体懒加载，不进首屏 bundle；加载中有占位、失败可重试，不再白屏
-const PptxApp = defineAsyncComponent({
-  loader: () => import('./apps/pptx/PptxApp.vue'),
-  loadingComponent: AppLoading,
-  errorComponent: AppError,
-  delay: 120,
-  timeout: 120000
-})
-
+// 应用（应用包 / 网页应用）都在 iframe 里跑，崩了也碰不到壳层
 const shell = useShellStore()
-const { activeApp, activated, launchpadOpen, runningApps } = storeToRefs(shell)
+const { activeApp, launchpadOpen, runningApps } = storeToRefs(shell)
 const registry = useRegistryStore()
 
-// apps/ 仓库里的外部应用：挂载一次常驻（iframe），返回桌面仅隐藏
-const externalApps = computed<InstalledApp[]>(() =>
+// 打开的应用：挂载一次常驻，返回桌面仅隐藏（保留应用内状态）
+const running = computed(() =>
   runningApps.value
     .map((id) => registry.byId(id))
-    .filter((app): app is InstalledApp => !!app && !app.builtin)
+    .filter((app): app is NonNullable<typeof app> => app !== null)
 )
 
 const wallpaper = ref('')
@@ -55,7 +44,7 @@ function wallpaperStyle(url: string): Record<string, string> {
 }
 
 onMounted(async () => {
-  // 应用仓库：启动扫描 apps/ 目录（安装的外部应用）
+  // 应用仓库：启动扫描（内置应用 + apps/ 里安装的）
   void registry.refresh()
 
   try {
@@ -64,15 +53,6 @@ onMounted(async () => {
   } catch {
     wallpaper.value = ''
   }
-
-  // 演示模块的引擎包很大：首屏稳定后空闲预取，等老师点「开始演示」时已经就位
-  const warm = (): void => {
-    void import('./apps/pptx/PptxApp.vue').catch(() => {})
-  }
-  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: unknown) => void })
-    .requestIdleCallback
-  if (typeof idle === 'function') idle(warm, { timeout: 8000 })
-  else window.setTimeout(warm, 2500)
 })
 </script>
 
@@ -90,12 +70,9 @@ onMounted(async () => {
           <PagedShell />
         </div>
 
-        <!-- 应用区：挂载一次常驻，返回桌面仅隐藏（保留应用内状态） -->
-        <PptxApp v-if="activated.pptx" v-show="activeApp === 'pptx'" />
-
-        <!-- apps/ 仓库里的外部应用 -->
+        <!-- 打开的应用（应用包 / 网页应用），iframe 隔离 -->
         <ExternalAppFrame
-          v-for="app in externalApps"
+          v-for="app in running"
           :key="app.id"
           v-show="activeApp === app.id"
           :app="app"

@@ -1,0 +1,39 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family:
+    'MiSans',
+    'Source Han Sans SC',
+    'Noto Sans CJK SC',
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
+    sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #22262e;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 编辑文本时恢复选择 */
+select-auto,
+.select-auto * {
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+/* 放映画布等比缩放：引擎按窗口宽算 16:9（超高窗口会溢出上下），
+   缩放系数由 PptxApp 按窗口实测算好、挂在 CSS 变量上 */
+.pptx-vue-presentation-frame {
+  transform: scale(var(--pres-scale, 1)) !important;
+  transform-origin: center center !important;
+}

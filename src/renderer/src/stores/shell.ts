@@ -4,19 +4,19 @@ import { computed, ref } from 'vue'
 import type { AppActions, AppId } from '@/platform/contract'
 
 function initialApp(): AppId {
-  // 便于调试/无头截图直达某个应用：?module=pptx
+  // 便于调试/无头截图直达某个应用：?module=<应用id>
   const m = new URLSearchParams(window.location.search).get('module')
-  return m === 'pptx' ? 'pptx' : 'launcher'
+  return m ?? 'launcher'
 }
 
 export const useShellStore = defineStore('shell', () => {
   const activeApp = ref<AppId>(initialApp())
 
   // 已激活（挂载过）的应用：挂载一次常驻，返回桌面仅隐藏，保留应用内状态
-  // 外部应用（apps/ 仓库）用同样的机制挂载 iframe，id 即应用 id
+  // 外部应用（应用包 / 网页应用）用同样的机制挂载 iframe，id 即应用 id
   const activated = ref<Record<string, boolean>>({
     launcher: true,
-    ...(activeApp.value === 'pptx' ? { pptx: true } : {})
+    ...(activeApp.value !== 'launcher' ? { [activeApp.value]: true } : {})
   })
 
   // 任务栏 = 当前打开的应用（launcher 本身不算）

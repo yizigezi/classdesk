@@ -7,13 +7,17 @@ import { useRegistryStore } from '@/stores/registry'
 import { useShellStore } from '@/stores/shell'
 import type { AppEntry } from '@/platform/contract'
 
-// —— 应用列表（类似 Launchpad）：点图标打开应用；管理模式里装/卸应用 ——
+// —— 应用列表（类似 Launchpad）：点图标打开应用；管理模式里装 / 卸 / 加网页 ——
 const registry = useRegistryStore()
 const shell = useShellStore()
 const { entries, error, busy } = storeToRefs(registry)
 
 const manage = ref(false)
 const notice = ref('')
+
+const webForm = ref(false)
+const webName = ref('')
+const webUrl = ref('')
 
 function launch(id: string): void {
   if (shell.activated[id] && shell.activeApp !== id) shell.focusApp(id)
@@ -36,8 +40,27 @@ async function uninstall(app: AppEntry): Promise<void> {
   if (registry.error) notice.value = registry.error
 }
 
+async function createWeb(): Promise<void> {
+  notice.value = ''
+  const res = await registry.createWeb(webName.value, webUrl.value)
+  if (!res) return
+  if (res.error) {
+    notice.value = res.error
+    return
+  }
+  if (res.installed) {
+    notice.value = `已添加：${res.installed.name}`
+    webForm.value = false
+    webName.value = ''
+    webUrl.value = ''
+  }
+}
+
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') shell.closeLaunchpad()
+  if (e.key === 'Escape') {
+    if (webForm.value) webForm.value = false
+    else shell.closeLaunchpad()
+  }
 }
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
@@ -92,7 +115,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </button>
         </div>
 
-        <!-- 管理模式：安装入口 -->
+        <!-- 管理模式：安装 / 加网页 -->
         <div v-if="manage" class="flex flex-col items-center">
           <button
             class="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-dashed border-white/35 text-white/85 transition hover:bg-white/12"
@@ -101,13 +124,63 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           >
             <SvgIcon name="plus" class="h-7 w-7" />
           </button>
-          <span class="mt-2.5 text-[12px] text-white/85">{{ busy ? '安装中…' : '安装应用' }}</span>
+          <span class="mt-2.5 text-[12px] text-white/85">{{ busy ? '处理中…' : '安装应用' }}</span>
+        </div>
+        <div v-if="manage" class="flex flex-col items-center">
+          <button
+            class="grid h-[72px] w-[72px] place-items-center rounded-[22px] border border-dashed border-white/35 text-white/85 transition hover:bg-white/12"
+            type="button"
+            @click="webForm = true"
+          >
+            <SvgIcon name="apps" class="h-7 w-7" />
+          </button>
+          <span class="mt-2.5 text-[12px] text-white/85">添加网页</span>
         </div>
       </div>
     </div>
 
     <div class="px-8 pb-6 text-center text-[11px] text-white/45">
       应用装在应用根目录的 apps 文件夹，启动时自动加载
+    </div>
+
+    <!-- 添加网页 -->
+    <div
+      v-if="webForm"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-[#12151b]/45"
+      @click.self="webForm = false"
+    >
+      <div class="w-[380px] rounded-card bg-[#1b2029] p-6 text-white shadow-card">
+        <div class="text-[15px] font-medium">添加网页</div>
+        <input
+          v-model="webName"
+          class="mt-4 h-10 w-full rounded-tile border border-white/15 bg-white/8 px-3 text-[13px] outline-none focus:border-white/35"
+          placeholder="名称"
+          type="text"
+        />
+        <input
+          v-model="webUrl"
+          class="mt-3 h-10 w-full rounded-tile border border-white/15 bg-white/8 px-3 text-[13px] outline-none focus:border-white/35"
+          placeholder="https://"
+          type="text"
+          @keydown.enter="createWeb"
+        />
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            class="bar-item h-9 rounded-pill bg-white/10 px-4 text-[12px]"
+            type="button"
+            @click="webForm = false"
+          >
+            取消
+          </button>
+          <button
+            class="h-9 rounded-pill bg-white px-5 text-[12px] font-medium text-[#1b2029]"
+            type="button"
+            @click="createWeb"
+          >
+            添加
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

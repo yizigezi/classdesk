@@ -3,10 +3,18 @@ import { storeToRefs } from 'pinia'
 import SvgIcon from './components/SvgIcon.vue'
 import { useAppStore } from '@/stores/app'
 import { useShellStore } from '@/stores/shell'
+import { PRESENT_APP_ID, useRegistryStore } from '@/stores/registry'
 
 const store = useAppStore()
 const { timeLabel, dateLabel } = storeToRefs(store)
 const shell = useShellStore()
+const registry = useRegistryStore()
+
+function startPresent(): void {
+  // 「演示」是内置应用包；不在就开应用列表找找
+  if (registry.byId(PRESENT_APP_ID)) shell.openApp(PRESENT_APP_ID)
+  else shell.toggleLaunchpad()
+}
 
 const nextLesson = {
   tag: '下一节',
@@ -41,7 +49,7 @@ const nextLesson = {
 
     <button
       class="no-drag mt-10 flex h-16 w-[280px] items-center justify-center gap-2.5 rounded-pill bg-white/95 text-[18px] font-medium text-ink-900 shadow-card transition hover:bg-white"
-      @click="shell.openApp('pptx')"
+      @click="startPresent"
     >
       <SvgIcon name="slide" class="h-5 w-5" />
       开始演示

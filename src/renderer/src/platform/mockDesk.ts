@@ -6,25 +6,33 @@ type DeskApi = Window['desk']
 
 const fakeApps: InstalledApp[] = [
   {
-    id: 'files',
-    name: '文件管理',
-    version: '0.1.0',
-    icon: 'folder',
+    id: 'cn.yizigezi.pptx',
+    name: '演示',
+    version: '0.5.0',
+    icon: 'slide',
     entry: 'index.html',
-    description: '浏览文件',
-    permissions: ['fs.read'],
-    dir: 'apps/files',
-    removable: true
+    description: 'PPTX 课件动画放映',
+    permissions: [],
+    type: 'app',
+    url: '',
+    pkgPath: 'dist-apps/cn.yizigezi.pptx.cdapp',
+    kind: 'cdapp',
+    source: 'system',
+    removable: false
   },
   {
-    id: 'clock-app',
-    name: '时钟',
-    version: '0.2.0',
-    icon: 'clock',
+    id: 'cn.yizigezi.web-bilibili',
+    name: '课堂视频',
+    version: '1.0.0',
+    icon: 'apps',
     entry: 'index.html',
-    description: '看时间',
-    permissions: [],
-    dir: 'apps/clock-app',
+    description: 'www.bilibili.com',
+    permissions: ['net'],
+    type: 'web',
+    url: 'https://www.bilibili.com',
+    pkgPath: 'apps/cn.yizigezi.web-bilibili',
+    kind: 'dir',
+    source: 'user',
     removable: true
   }
 ]
@@ -34,13 +42,39 @@ const fakeDrives: DriveInfo[] = [
   { id: 'F:', label: 'SD 卡', path: 'F:\\' }
 ]
 
+// 开发调试：?mockApp=<url> 可以把一个假应用指到指定页面（比如本地跑的应用包），
+// 用来在浏览器里联调 iframe 应用的桥（底栏操作 / 设置 API）
+const mockAppUrl = new URLSearchParams(window.location.search).get('mockApp')
+if (mockAppUrl) {
+  fakeApps[1] = { ...fakeApps[1], id: 'cn.yizigezi.web-local', name: '本地调试', type: 'web', url: mockAppUrl }
+}
+
+type SettingValue = string | number | boolean | null
+
+const fakeSettings: Record<string, Record<string, SettingValue>> = {}
+
 export const mockDesk: DeskApi = {
   wallpaperToday: () => Promise.resolve(null),
   appsList: () => Promise.resolve([...fakeApps]),
-  appsInstall: () => Promise.resolve({ canceled: true, apps: [...fakeApps], error: '预览模式不支持安装' }),
+  appsInstall: () =>
+    Promise.resolve({ canceled: true, apps: [...fakeApps], error: '预览模式不支持安装' }),
   appsUninstall: (id: string) => Promise.resolve(fakeApps.filter((a) => a.id !== id)),
+  appsCreateWeb: () =>
+    Promise.resolve({ ok: false, apps: [...fakeApps], error: '预览模式不支持添加网页' }),
   drivesList: () => Promise.resolve([...fakeDrives]),
-  drivesOpen: () => Promise.resolve('预览模式不支持打开')
+  drivesOpen: () => Promise.resolve('预览模式不支持打开'),
+  settings: {
+    get: (scope: string, key: string) => Promise.resolve(fakeSettings[scope]?.[key] ?? null),
+    set: (scope: string, key: string, value: SettingValue) => {
+      fakeSettings[scope] = { ...(fakeSettings[scope] ?? {}), [key]: value }
+      return Promise.resolve(true)
+    },
+    delete: (scope: string, key: string) => {
+      if (fakeSettings[scope]) delete fakeSettings[scope][key]
+      return Promise.resolve(true)
+    },
+    list: (scope: string) => Promise.resolve({ ...(fakeSettings[scope] ?? {}) })
+  }
 }
 
 export function installMockDesk(): boolean {

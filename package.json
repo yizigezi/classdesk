@@ -1,6 +1,6 @@
 {
   "name": "classdesk",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "课堂桌面工具",
   "author": "yizigezi",
   "private": true,
@@ -17,6 +17,15 @@
       "out/**/*",
       "package.json",
       "!node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "dist-apps",
+        "to": "apps-system",
+        "filter": [
+          "**/*.cdapp"
+        ]
+      }
     ],
     "asar": true,
     "win": {
@@ -42,7 +51,9 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "node scripts/build.mjs",
+    "build": "node scripts/build.mjs && node scripts/build-apps.mjs",
+    "build:shell": "node scripts/build.mjs",
+    "build:apps": "node scripts/build-apps.mjs",
     "build:raw": "electron-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json",
     "start": "electron-vite preview"
@@ -56,11 +67,12 @@
     "vue-i18n": "^11.4.16"
   },
   "devDependencies": {
+    "@electron/asar": "^4.3.1",
     "@tsconfig/node18": "^18.2.7",
     "@types/node": "^22.10.2",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.5.1",
-    "electron": "^33.2.1",
+    "electron": "^45.0.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
     "typescript": "^5.6.3",

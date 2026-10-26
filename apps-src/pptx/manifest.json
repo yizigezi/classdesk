@@ -1,0 +1,10 @@
+{
+  "id": "cn.yizigezi.pptx",
+  "name": "演示",
+  "version": "0.5.0",
+  "icon": "slide",
+  "entry": "index.html",
+  "description": "PPTX 课件动画放映",
+  "author": "yizigezi",
+  "permissions": []
+}
