@@ -1,0 +1,10 @@
+{
+  "id": "cn.yizigezi.doccam",
+  "name": "展台",
+  "version": "0.5.1",
+  "icon": "camera",
+  "entry": "index.html",
+  "description": "实物展台：摄像头画面、拍照、墨迹批注、画面拖动缩放",
+  "author": "yizigezi",
+  "permissions": ["camera"]
+}

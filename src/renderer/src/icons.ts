@@ -22,7 +22,13 @@ export const ICON_NAMES = [
   'usb',
   'plus',
   'close',
-  'trash'
+  'trash',
+  'camera',
+  'eraser',
+  'undo',
+  'fit',
+  'rotate',
+  'download'
 ] as const
 
 export type IconName = (typeof ICON_NAMES)[number]

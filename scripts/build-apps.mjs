@@ -7,7 +7,10 @@ import { join } from 'node:path'
 
 const root = new URL('..', import.meta.url).pathname
 
-const APPS = [{ id: 'cn.yizigezi.pptx', dir: 'pptx' }]
+const APPS = [
+  { id: 'cn.yizigezi.pptx', dir: 'pptx' },
+  { id: 'cn.yizigezi.doccam', dir: 'doccam' }
+]
 
 function run(cmd, args) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', cwd: root })

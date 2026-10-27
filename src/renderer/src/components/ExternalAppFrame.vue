@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
       :src="src"
       :title="app.name"
       sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads"
-      allow="clipboard-read; clipboard-write"
+      allow="clipboard-read; clipboard-write; camera; microphone"
     />
   </div>
 </template>

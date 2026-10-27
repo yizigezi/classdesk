@@ -1,5 +1,5 @@
 // —— classdesk 主进程：窗口 / 壁纸 / 应用仓库 / 设置库 / 可移动存储 ——
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron'
 import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { copyFile, cp, mkdir, stat } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
@@ -556,6 +556,28 @@ app.whenReady().then(() => {
   userAppsDir()
   openSettings(join(appRoot(), 'classdesk.db'))
   registerAppProtocol()
+
+  // 应用（iframe）要用摄像头（展台类应用）：只给本机页面放行媒体/剪贴板类权限，
+  // 将来接权限系统时这里换成按应用 manifest 的权限声明判
+  const mediaLike = new Set([
+    'camera',
+    'microphone',
+    'media',
+    'clipboard-read',
+    'clipboard-write',
+    'fullscreen',
+    'pointerLock'
+  ])
+  session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+    const url = wc.getURL()
+    const local =
+      url.startsWith('classdesk-app:') ||
+      url.startsWith('file:') ||
+      url.startsWith('http://127.0.0.1') ||
+      url.startsWith('http://localhost')
+    callback(local && mediaLike.has(permission))
+  })
+
   createWindow()
 
   app.on('activate', () => {

@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import CardShell from './CardShell.vue'
 import { useShellStore } from '@/stores/shell'
+import { PRESENT_APP_ID, useRegistryStore } from '@/stores/registry'
 
 const shell = useShellStore()
+const registry = useRegistryStore()
+
+function startPresent(): void {
+  if (registry.byId(PRESENT_APP_ID)) shell.openApp(PRESENT_APP_ID)
+  else shell.toggleLaunchpad()
+}
 </script>
 
 <template>
@@ -41,7 +48,7 @@ const shell = useShellStore()
 
       <button
         class="no-drag grid h-[72px] w-[72px] shrink-0 place-items-center rounded-pill bg-ink-900 text-[13px] font-medium text-white transition hover:bg-ink-700"
-        @click="shell.openApp('pptx')"
+        @click="startPresent"
       >
         开始演示
       </button>

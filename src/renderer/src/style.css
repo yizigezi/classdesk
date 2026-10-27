@@ -49,6 +49,31 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* 控件复位：浏览器 UA 样式会把按钮渲染成灰底，盖在深色玻璃栏上读不清。
+   （v0.5.0 之前靠放映引擎泄漏的 reset 顺手压住了，现在壳层自己声明） */
+button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
 /* 常驻栏（顶栏 / 底栏 / 系统导航栏）统一的深色玻璃底：
    图标与文字放在固定深底上，不再依赖壁纸颜色，可见度稳定 */
 .bar-glass {

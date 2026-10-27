@@ -138,6 +138,37 @@ defineProps<{
       <path d="M10.2 10.8v6M13.8 10.8v6" />
     </template>
 
+    <template v-else-if="name === 'camera'">
+      <path d="M3.5 8.6h3.2l1.5-2.2h7.6l1.5 2.2h3.2v9.4H3.5z" />
+      <circle cx="12" cy="13.2" r="3.1" />
+    </template>
+
+    <template v-else-if="name === 'eraser'">
+      <path d="M8.4 19.5h10" />
+      <path d="M4.8 14.2l7-7a1.8 1.8 0 0 1 2.6 0l4.4 4.4a1.8 1.8 0 0 1 0 2.6l-4.9 4.9H8.3z" />
+      <path d="M9.5 9.9l5.6 5.6" />
+    </template>
+
+    <template v-else-if="name === 'undo'">
+      <path d="M4.5 8.5h9.2a5.3 5.3 0 0 1 0 10.6H8" />
+      <path d="M8 4.5L4.2 8.5 8 12.2" />
+    </template>
+
+    <template v-else-if="name === 'fit'">
+      <path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" />
+    </template>
+
+    <template v-else-if="name === 'rotate'">
+      <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+      <path d="M17.6 3.4v3.8h-3.8" />
+    </template>
+
+    <template v-else-if="name === 'download'">
+      <path d="M12 4v10" />
+      <path d="M7.8 10.2L12 14.4l4.2-4.2" />
+      <path d="M4.5 18.5h15" />
+    </template>
+
     <template v-else>
       <path d="M9.2 6.8L14.8 12l-5.6 5.2" />
       <path d="M17 6.8v10.4" />

@@ -186,21 +186,5 @@ onBeforeUnmount(() => {
         <component :is="page.comp" />
       </div>
     </div>
-
-    <div class="flex h-7 shrink-0 items-center justify-center gap-2">
-      <button
-        v-for="(page, index) in pages"
-        :key="page.key"
-        class="no-drag grid h-5 w-8 place-items-center rounded-pill"
-        @click="store.setPage(index)"
-      >
-        <span
-          class="rounded-pill transition-all duration-300"
-          :class="
-            pageIndex === index ? 'h-2 w-5 bg-white/90 shadow-card' : 'h-2 w-2 bg-white/45'
-          "
-        ></span>
-      </button>
-    </div>
   </div>
 </template>
