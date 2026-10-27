@@ -251,11 +251,12 @@ async function capture(): Promise<void> {
   captureInProgress = true
   try {
     const wait = delaySec.value
-    if (wait > 0) {
-    for (let i = wait; i > 0; i--) {
-      countdown.value = i
-      await sleep(1000)
-      if (sourceKind.value === 'none') return
+      if (wait > 0) {
+      for (let i = wait; i > 0; i--) {
+        countdown.value = i
+        await sleep(1000)
+        if (sourceKind.value === 'none') return
+      }
     }
     countdown.value = 0
     const url = compose().toDataURL('image/png')
