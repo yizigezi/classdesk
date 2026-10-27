@@ -205,6 +205,11 @@ function onPickImage(event: Event): void {
   imageObjectUrls.add(url)
   const img = new Image()
   img.onload = () => {
+    const previous = baseImageSrc.value
+    if (previous.startsWith('blob:') && previous !== url && imageObjectUrls.has(previous)) {
+      URL.revokeObjectURL(previous)
+      imageObjectUrls.delete(previous)
+    }
     baseSize.w = img.naturalWidth || 1280
     baseSize.h = img.naturalHeight || 720
     sourceKind.value = 'image'
