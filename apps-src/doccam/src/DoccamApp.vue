@@ -251,7 +251,7 @@ async function capture(): Promise<void> {
   captureInProgress = true
   try {
     const wait = delaySec.value
-      if (wait > 0) {
+    if (wait > 0) {
       for (let i = wait; i > 0; i--) {
         countdown.value = i
         await sleep(1000)
