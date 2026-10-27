@@ -46,6 +46,8 @@ const filter = ref<'color' | 'gray' | 'mono' | 'invert' | 'warm'>('color')
 const delaySec = ref(0)
 const countdown = ref(0)
 const captures = ref<Array<{ id: number; url: string }>>([])
+let captureInProgress = false
+const imageObjectUrls = new Set<string>()
 
 const filterCss = computed(() => {
   switch (filter.value) {
@@ -200,8 +202,14 @@ function onPickImage(event: Event): void {
   input.value = ''
   if (!file) return
   const url = URL.createObjectURL(file)
+  imageObjectUrls.add(url)
   const img = new Image()
   img.onload = () => {
+    const previous = baseImageSrc.value
+    if (previous.startsWith('blob:') && previous !== url && imageObjectUrls.has(previous)) {
+      URL.revokeObjectURL(previous)
+      imageObjectUrls.delete(previous)
+    }
     baseSize.w = img.naturalWidth || 1280
     baseSize.h = img.naturalHeight || 720
     sourceKind.value = 'image'
@@ -211,6 +219,11 @@ function onPickImage(event: Event): void {
     redrawInk()
     fit()
     pushActions()
+  }
+  img.onerror = () => {
+    URL.revokeObjectURL(url)
+    imageObjectUrls.delete(url)
+    cameraError.value = '图片读取失败，请尝试其他图片'
   }
   img.src = url
 }
@@ -239,28 +252,36 @@ function compose(): HTMLCanvasElement {
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
 async function capture(): Promise<void> {
-  if (sourceKind.value === 'none') return
-  const wait = delaySec.value
-  if (wait > 0) {
-    for (let i = wait; i > 0; i--) {
-      countdown.value = i
-      await sleep(1000)
+  if (sourceKind.value === 'none' || captureInProgress) return
+  captureInProgress = true
+  try {
+    const wait = delaySec.value
+    if (wait > 0) {
+      for (let i = wait; i > 0; i--) {
+        countdown.value = i
+        await sleep(1000)
+        if (sourceKind.value === 'none') return
+      }
     }
     countdown.value = 0
+    const url = compose().toDataURL('image/png')
+    captures.value.unshift({ id: Date.now(), url })
+    if (captures.value.length > 24) captures.value.pop()
+    // 拍完进入照片态：墨迹已经烤进照片，可以继续批注
+    baseImageSrc.value = url
+    strokes.value = []
+    redoStack.value = []
+    redrawInk()
+    pushActions()
+  } finally {
+    countdown.value = 0
+    captureInProgress = false
   }
-  const url = compose().toDataURL('image/png')
-  captures.value.unshift({ id: Date.now(), url })
-  if (captures.value.length > 24) captures.value.pop()
-  // 拍完进入照片态：墨迹已经烤进照片，可以继续批注
-  baseImageSrc.value = url
-  strokes.value = []
-  redoStack.value = []
-  redrawInk()
-  pushActions()
 }
 
 function resumePreview(): void {
   baseImageSrc.value = ''
+  sourceKind.value = stream ? 'camera' : 'none'
   strokes.value = []
   redoStack.value = []
   redrawInk()
@@ -460,6 +481,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopStream()
+  for (const url of imageObjectUrls) URL.revokeObjectURL(url)
+  imageObjectUrls.clear()
 })
 
 watch(deviceId, (id) => {
