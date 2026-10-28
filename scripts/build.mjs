@@ -7,10 +7,13 @@
 //   2) 压缩按文件粒度执行，峰值 = 最大的那个 chunk，互不影响。
 // 需要未压缩产物时：CLASSDESK_SKIP_MINIFY=1 node scripts/build.mjs
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const root = new URL('..', import.meta.url).pathname
+// URL.pathname 在 Windows 上会得到 /D:/...，不能直接作为 spawnSync 的 cwd。
+// 用 fileURLToPath 保证本地 Windows / CI Windows 都得到合法的盘符路径。
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', cwd: root, ...opts })
