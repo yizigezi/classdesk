@@ -1,0 +1,50 @@
+name: Build Windows package
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps-src/doccam/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'electron.vite.config.*'
+      - '.github/workflows/build-doccam.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build application and app packages
+        run: npm run build
+
+      - name: Upload Windows package and app bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: classdesk-windows-doccam
+          path: |
+            dist-test/**
+            dist-apps/**
+          if-no-files-found: error
+          retention-days: 14
