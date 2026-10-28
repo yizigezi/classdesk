@@ -2,6 +2,7 @@
 // classdesk.db 放应用根目录（便携版跟着走）；
 // config 表按 scope 隔离：'system' = 系统设置，应用 id = 该应用的配置。
 // 渲染层走 IPC（preload 的 window.desk.settings.*）；外部应用经 postMessage 桥转发，scope 锁自己的 id。
+import './window-controls'
 import { DatabaseSync } from 'node:sqlite'
 
 export type SettingValue = string | number | boolean | null
