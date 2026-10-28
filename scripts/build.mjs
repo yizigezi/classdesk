@@ -46,13 +46,10 @@ if (process.env.CLASSDESK_SKIP_MINIFY === '1') {
 }
 
 // 2) 逐文件压缩 out/**/*.{js,css}
-// Windows 下 npm 的 .bin 可执行文件是 .cmd shim，spawnSync 不会自动补扩展名。
-const esbuild = join(
-  root,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'
-)
+// Windows 的 .cmd shim 不是原生可执行文件，直接传给 spawnSync 会得到 EINVAL。
+// 通过 cmd.exe /d /s /c 启动 shim，兼容 GitHub Actions windows-latest。
+const esbuildShim = join(root, 'node_modules', '.bin', 'esbuild.cmd')
+const esbuildCommand = process.platform === 'win32' ? 'cmd.exe' : join(root, 'node_modules', '.bin', 'esbuild')
 const targets = []
 
 function walk(dir) {
@@ -66,9 +63,15 @@ function walk(dir) {
 walk(join(root, 'out'))
 
 for (const file of targets) {
-  run(esbuild, [file, '--minify', '--allow-overwrite', `--outfile=${file}`], {
-    stdio: ['ignore', 'ignore', 'inherit']
-  })
+  if (process.platform === 'win32') {
+    run(esbuildCommand, ['/d', '/s', '/c', esbuildShim, file, '--minify', '--allow-overwrite', `--outfile=${file}`], {
+      stdio: ['ignore', 'ignore', 'inherit']
+    })
+  } else {
+    run(esbuildCommand, [file, '--minify', '--allow-overwrite', `--outfile=${file}`], {
+      stdio: ['ignore', 'ignore', 'inherit']
+    })
+  }
 }
 
 console.log(`[build] minified ${targets.length} files`)
