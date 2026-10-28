@@ -1,35 +1,7 @@
 export const ICON_NAMES = [
-  'wifi',
-  'volume',
-  'bell',
-  'search',
-  'clock',
-  'folder',
-  'slide',
-  'doc',
-  'sheet',
-  'pen',
-  'setting',
-  'chevron-left',
-  'chevron-right',
-  'prev',
-  'next',
-  'home',
-  'back',
-  'play',
-  'exit',
-  'apps',
-  'usb',
-  'plus',
-  'close',
-  'trash',
-  'camera',
-  'eraser',
-  'undo',
-  'fit',
-  'rotate',
-  'download',
-  'fullscreen'
+  'wifi', 'volume', 'bell', 'search', 'clock', 'folder', 'slide', 'doc', 'sheet', 'pen', 'setting',
+  'chevron-left', 'chevron-right', 'prev', 'next', 'home', 'back', 'play', 'exit', 'apps', 'usb',
+  'plus', 'close', 'trash', 'camera', 'eraser', 'undo', 'fit', 'rotate', 'download', 'fullscreen', 'windows'
 ] as const
 
 export type IconName = (typeof ICON_NAMES)[number]
