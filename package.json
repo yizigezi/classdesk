@@ -51,7 +51,7 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "node scripts/build.mjs && node scripts/build-apps.mjs",
+    "build": "node scripts/build.mjs && node scripts/build-apps.mjs && electron-builder --win --x64 --publish never",
     "build:shell": "node scripts/build.mjs",
     "build:apps": "node scripts/build-apps.mjs",
     "build:raw": "electron-vite build",
@@ -60,7 +60,7 @@
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.2",
-    "jszip": "^3.10.2",
+    "jszip": "^3.10.0",
     "pinia": "^3.0.2",
     "pptx-vue-viewer": "^4.43.0",
     "vue": "^3.5.17",
