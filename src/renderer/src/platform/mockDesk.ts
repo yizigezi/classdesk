@@ -55,6 +55,11 @@ const fakeSettings: Record<string, Record<string, SettingValue>> = {}
 
 export const mockDesk: DeskApi = {
   wallpaperToday: () => Promise.resolve(null),
+  window: {
+    isFullscreen: () => Promise.resolve(true),
+    toggleFullscreen: () => Promise.resolve(true),
+    showDesktop: () => Promise.resolve(true)
+  },
   appsList: () => Promise.resolve([...fakeApps]),
   appsInstall: () =>
     Promise.resolve({ canceled: true, apps: [...fakeApps], error: '预览模式不支持安装' }),
