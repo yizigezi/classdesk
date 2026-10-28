@@ -3,9 +3,11 @@
 // .cdapp 就是 asar 归档，只是应用包的后缀约定（见 docs/apps.md）。
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdirSync, rmSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-const root = new URL('..', import.meta.url).pathname
+// URL.pathname 在 Windows 下会产生 /D:/... 形式的路径，无法作为 spawnSync 的 cwd。
+const root = fileURLToPath(new URL('..', import.meta.url))
 
 const APPS = [
   { id: 'cn.yizigezi.pptx', dir: 'pptx' },
