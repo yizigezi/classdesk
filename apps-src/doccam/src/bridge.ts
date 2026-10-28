@@ -59,6 +59,19 @@ export function settingsList(): Promise<unknown> {
   return request({ type: 'settings.list' })
 }
 
+// 应用页面通常会在根节点监听 pointerdown 来处理拖动画面。
+// 控件（按钮、下拉框、输入框等）必须保留自己的 pointer 事件，避免被根节点抢走 pointer capture。
+window.addEventListener(
+  'pointerdown',
+  (event: PointerEvent) => {
+    const target = event.target
+    if (target instanceof Element && target.closest('button,select,input,textarea,a')) {
+      event.stopPropagation()
+    }
+  },
+  true
+)
+
 window.addEventListener('message', (event: MessageEvent) => {
   const data = event.data as (Record<string, unknown> & { source?: string; type?: string }) | null
   if (!data || data.source !== 'classdesk-shell') return
