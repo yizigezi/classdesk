@@ -16,7 +16,14 @@ const APPS = [
 
 function run(cmd, args) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', cwd: root })
-  if (r.status !== 0) process.exit(r.status ?? 1)
+  if (r.error) {
+    console.error(`[apps] failed to start ${cmd}: ${r.error.message}`)
+    process.exit(1)
+  }
+  if (r.status !== 0) {
+    console.error(`[apps] command exited with status ${r.status ?? 'unknown'}`)
+    process.exit(r.status ?? 1)
+  }
 }
 
 const asar = await import('@electron/asar')
@@ -26,9 +33,10 @@ mkdirSync(join(root, 'dist-apps'), { recursive: true })
 for (const app of APPS) {
   const buildDir = join(root, '.apps-build', app.id)
   rmSync(buildDir, { recursive: true, force: true })
+  mkdirSync(buildDir, { recursive: true })
 
   run(process.execPath, [
-    `--max-old-space-size=${process.env.CLASSDESK_HEAP || 2750}`,
+    '--max-old-space-size=' + (process.env.CLASSDESK_HEAP || '2750'),
     join(root, 'node_modules/vite/bin/vite.js'),
     'build',
     '--config',
