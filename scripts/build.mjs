@@ -17,7 +17,14 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 
 function run(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', cwd: root, ...opts })
-  if (r.status !== 0) process.exit(r.status ?? 1)
+  if (r.error) {
+    console.error(`[build] failed to start ${cmd}: ${r.error.message}`)
+    process.exit(1)
+  }
+  if (r.status !== 0) {
+    console.error(`[build] command exited with status ${r.status ?? 'unknown'}`)
+    process.exit(r.status ?? 1)
+  }
 }
 
 // 1) 构建（renderer 保持未压缩，避开 OOM）
@@ -39,7 +46,13 @@ if (process.env.CLASSDESK_SKIP_MINIFY === '1') {
 }
 
 // 2) 逐文件压缩 out/**/*.{js,css}
-const esbuild = join(root, 'node_modules', '.bin', 'esbuild')
+// Windows 下 npm 的 .bin 可执行文件是 .cmd shim，spawnSync 不会自动补扩展名。
+const esbuild = join(
+  root,
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild'
+)
 const targets = []
 
 function walk(dir) {
