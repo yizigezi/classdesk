@@ -28,7 +28,8 @@ export const ICON_NAMES = [
   'undo',
   'fit',
   'rotate',
-  'download'
+  'download',
+  'fullscreen'
 ] as const
 
 export type IconName = (typeof ICON_NAMES)[number]
