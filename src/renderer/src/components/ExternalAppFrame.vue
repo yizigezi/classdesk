@@ -79,7 +79,7 @@ function onMessage(event: MessageEvent): void {
     case 'system.settings.get': {
       const key = String(data.key ?? '')
       const allowed = props.app.id === 'cn.yizigezi.settings' &&
-        ['developerOptions', 'loadUnpackedFolders'].includes(key)
+        ['developerOptions', 'loadUnpackedFolders', 'startFullscreen'].includes(key)
       if (!allowed) {
         post({ type: 'settings.result', reqId: data.reqId, value: null })
         break
@@ -92,7 +92,7 @@ function onMessage(event: MessageEvent): void {
     case 'system.settings.set': {
       const key = String(data.key ?? '')
       const allowed = props.app.id === 'cn.yizigezi.settings' &&
-        ['developerOptions', 'loadUnpackedFolders'].includes(key) &&
+        ['developerOptions', 'loadUnpackedFolders', 'startFullscreen'].includes(key) &&
         typeof data.value === 'boolean'
       if (!allowed) {
         post({ type: 'settings.result', reqId: data.reqId, value: false })
