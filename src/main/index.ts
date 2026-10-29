@@ -151,20 +151,29 @@ function scanDir(dir: string): ScannedPackage[] {
   return out
 }
 
+function canLoadUnpackedFolders(): boolean {
+  return settingsGet('system', 'developerOptions') === true &&
+    settingsGet('system', 'loadUnpackedFolders') === true
+}
+
 function scanApps(): InstalledApp[] {
   const out: InstalledApp[] = []
   for (const pkg of scanDir(systemAppsDir())) {
     out.push(toInstalledApp(pkg.pkgPath, pkg.kind, pkg.reader.manifest, 'system'))
   }
   for (const pkg of scanDir(userAppsDir())) {
+    // 关闭开发者选项后，用户安装的未打包目录不会被加载；.cdapp 不受影响。
+    if (pkg.kind === 'dir' && !canLoadUnpackedFolders()) continue
     out.push(toInstalledApp(pkg.pkgPath, pkg.kind, pkg.reader.manifest, 'user'))
   }
   out.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
   return out
 }
 
-function findUserPackage(id: string): ScannedPackage | null {
-  return scanDir(userAppsDir()).find((p) => p.id === id) ?? null
+function findUserPackage(id: string, includeDisabledFolders = false): ScannedPackage | null {
+  const pkg = scanDir(userAppsDir()).find((p) => p.id === id) ?? null
+  if (pkg?.kind === 'dir' && !includeDisabledFolders && !canLoadUnpackedFolders()) return null
+  return pkg
 }
 
 async function installFromPath(src: string): Promise<InstalledApp> {
@@ -195,7 +204,7 @@ async function installFromPath(src: string): Promise<InstalledApp> {
 
 async function uninstallApp(id: string): Promise<void> {
   assertSafeAppId(id)
-  const pkg = findUserPackage(id)
+  const pkg = findUserPackage(id, true)
   if (!pkg) throw new Error('应用不存在或为内置应用')
   await stat(pkg.pkgPath)
   await shell.trashItem(pkg.pkgPath) // 进回收站，可恢复
@@ -505,9 +514,7 @@ ipcMain.handle('apps:list', () => scanApps())
 
 ipcMain.handle('apps:install', async (): Promise<InstallResult> => {
   const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-  const canLoadFolders =
-    settingsGet('system', 'developerOptions') === true &&
-    settingsGet('system', 'loadUnpackedFolders') === true
+  const canLoadFolders = canLoadUnpackedFolders()
   const buttons = canLoadFolders
     ? ['安装 .cdapp 文件', '加载未打包的文件夹', '取消']
     : ['安装 .cdapp 文件', '取消']
