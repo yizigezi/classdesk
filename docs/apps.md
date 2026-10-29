@@ -2,7 +2,7 @@
 
 classdesk 的应用都是**应用包**，分两种来源：
 
-- **内置应用**（如「演示」`cn.yizigezi.pptx`）：随程序分发，打包版在 `resources/apps-system/`，开发版在 `dist-apps/`，不可卸载。
+- **内置应用**（如「演示」`cn.yizigezi.pptx`、系统「设置」`cn.yizigezi.settings`）：随程序分发，打包版在 `resources/apps-system/`，开发版在 `dist-apps/`，不可卸载。
 - **用户应用**：装在应用仓库 `apps/` 里，可安装 / 卸载（卸载进回收站）。
 
 启动时两个位置一起扫描加载。应用根目录 = 打包版 exe 所在目录、开发版项目根目录（根目录不可写时退回用户数据目录），也可用 `CLASSDESK_APPS_DIR` 改。
@@ -37,14 +37,14 @@ cn.yizigezi.my-app/          # 文件夹包的目录名 = manifest.id
 }
 ```
 
-- `id`：**小写包名风格**（反向域名，如 `cn.yizigezi.my-app`），字母/数字/`.`/`-`/`_` 分段；`launcher`、`system` 保留。
+- `id`：**小写包名风格**（反向域名，如 `cn.yizigezi.my-app`），字母/数字/`.`/`-`/`_` 分段；`launcher`、`system` 和内置设置应用 id `cn.yizigezi.settings` 保留。
 - `type: "web"` 时是**网页应用**：不写 entry，写 `"url": "https://…"`（应用列表 → 管理 → 添加网页会自动生成）。
 - `permissions`：权限声明（见下）。
 
 ## 安装 / 卸载 / 添加网页
 
 - 应用列表（底栏九宫格按钮）→「管理」：
-  - **安装应用**：选 `.cdapp` 文件或应用包文件夹，拷进 `apps/`；
+  - **安装应用**：先选择安装 `.cdapp` 文件；未打包文件夹仅在「设置 → 开发者选项 → 加载未打包的文件夹」开启后显示。文件和文件夹使用独立选择器，拷进 `apps/`；
   - **添加网页**：填名称和网址，自动生成网页应用包（图标自动抓 favicon / apple-touch-icon，抓不到用默认图标）；
   - 点应用右上角删除按钮卸载（内置应用只显示「内置」标）。
 
@@ -91,7 +91,7 @@ cn.yizigezi.my-app/          # 文件夹包的目录名 = manifest.id
 目前**权限系统未启用，一律放行**。接口已留好（`src/renderer/src/platform/permissions.ts` 的
 `checkPermission` / `requestPermission`），接入时只需替换这两个函数的实现，调用方不用改。
 
-## 自己打应用包
+## 开发者选项与未打包文件夹\n\n「设置」应用默认只允许安装 `.cdapp`。如需开发调试，可进入「设置 → 开发者选项」启用开发者选项，再单独开启「加载未打包的文件夹」。关闭开发者选项会自动关闭文件夹加载；主进程会再次校验该开关，不能仅靠界面绕过。未打包文件夹中的代码会直接运行，只应加载自己编写或完全信任的应用。\n\n## 自己打应用包
 
 ```bash
 node scripts/build-apps.mjs   # vite 打包 apps-src/<app> → asar → dist-apps/<id>.cdapp
