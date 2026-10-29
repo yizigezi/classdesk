@@ -169,6 +169,13 @@ function findUserPackage(id: string): ScannedPackage | null {
 
 async function installFromPath(src: string): Promise<InstalledApp> {
   const isCdapp = src.endsWith('.cdapp')
+  if (
+    !isCdapp &&
+    !(settingsGet('system', 'developerOptions') === true &&
+      settingsGet('system', 'loadUnpackedFolders') === true)
+  ) {
+    throw new Error('未打包文件夹加载已关闭。请先在「设置 → 开发者选项」中启用。')
+  }
   const reader = openAppPackage(src)
   if (!reader) {
     throw new Error(isCdapp ? '不是有效的 .cdapp 应用包' : '所选文件夹里没有有效的 manifest.json')
@@ -498,12 +505,42 @@ ipcMain.handle('apps:list', () => scanApps())
 
 ipcMain.handle('apps:install', async (): Promise<InstallResult> => {
   const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-  const options: Electron.OpenDialogOptions = {
-    title: '选择应用包（.cdapp 文件或应用文件夹）',
-    buttonLabel: '安装',
-    properties: ['openFile', 'openDirectory'],
-    filters: [{ name: '应用包', extensions: ['cdapp'] }]
+  const canLoadFolders =
+    settingsGet('system', 'developerOptions') === true &&
+    settingsGet('system', 'loadUnpackedFolders') === true
+  const buttons = canLoadFolders
+    ? ['安装 .cdapp 文件', '加载未打包的文件夹', '取消']
+    : ['安装 .cdapp 文件', '取消']
+  const choiceOptions: Electron.MessageBoxOptions = {
+    type: 'question',
+    title: '安装应用',
+    message: '选择应用来源',
+    detail: canLoadFolders
+      ? '推荐安装 .cdapp 文件。未打包文件夹仅适用于开发调试。'
+      : '仅允许安装已打包的 .cdapp 应用。需要加载开发文件夹时，请先启用开发者选项。',
+    buttons,
+    defaultId: 0,
+    cancelId: buttons.length - 1,
+    noLink: true
   }
+  const choice = win
+    ? await dialog.showMessageBox(win, choiceOptions)
+    : await dialog.showMessageBox(choiceOptions)
+  if (choice.response === buttons.length - 1) return { canceled: true, apps: scanApps() }
+
+  const choosingFolder = canLoadFolders && choice.response === 1
+  const options: Electron.OpenDialogOptions = choosingFolder
+    ? {
+        title: '选择未打包的应用文件夹',
+        buttonLabel: '加载',
+        properties: ['openDirectory']
+      }
+    : {
+        title: '选择 .cdapp 应用包',
+        buttonLabel: '安装',
+        properties: ['openFile'],
+        filters: [{ name: 'ClassDesk 应用包', extensions: ['cdapp'] }]
+      }
   const result = win
     ? await dialog.showOpenDialog(win, options)
     : await dialog.showOpenDialog(options)
