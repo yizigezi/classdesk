@@ -1,4 +1,4 @@
-type SettingsKey = 'developerOptions' | 'loadUnpackedFolders'
+type SettingsKey = 'developerOptions' | 'loadUnpackedFolders' | 'startFullscreen'
 
 const pending = new Map<number, (value: unknown) => void>()
 let requestId = 0
