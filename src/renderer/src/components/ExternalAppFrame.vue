@@ -74,6 +74,43 @@ function onMessage(event: MessageEvent): void {
         post({ type: 'settings.result', reqId: data.reqId, value: all })
       })
       break
+    case 'system.settings.get': {
+      const key = String(data.key ?? '')
+      const allowed = props.app.id === 'cn.yizigezi.settings' &&
+        ['developerOptions', 'loadUnpackedFolders'].includes(key)
+      if (!allowed) {
+        post({ type: 'settings.result', reqId: data.reqId, value: null })
+        break
+      }
+      void window.desk?.settings.get('system', key).then((value) => {
+        post({ type: 'settings.result', reqId: data.reqId, value })
+      })
+      break
+    }
+    case 'system.settings.set': {
+      const key = String(data.key ?? '')
+      const allowed = props.app.id === 'cn.yizigezi.settings' &&
+        ['developerOptions', 'loadUnpackedFolders'].includes(key) &&
+        typeof data.value === 'boolean'
+      if (!allowed) {
+        post({ type: 'settings.result', reqId: data.reqId, value: false })
+        break
+      }
+      const value = data.value as boolean
+      void (async () => {
+        if (key === 'loadUnpackedFolders' && value &&
+          (await window.desk?.settings.get('system', 'developerOptions')) !== true) {
+          post({ type: 'settings.result', reqId: data.reqId, value: false })
+          return
+        }
+        await window.desk?.settings.set('system', key, value)
+        if (key === 'developerOptions' && !value) {
+          await window.desk?.settings.set('system', 'loadUnpackedFolders', false)
+        }
+        post({ type: 'settings.result', reqId: data.reqId, value: true })
+      })()
+      break
+    }
   }
 }
 
