@@ -11,7 +11,8 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 
 const APPS = [
   { id: 'cn.yizigezi.pptx', dir: 'pptx' },
-  { id: 'cn.yizigezi.doccam', dir: 'doccam' }
+  { id: 'cn.yizigezi.doccam', dir: 'doccam' },
+  { id: 'cn.yizigezi.settings', dir: 'settings' }
 ]
 
 function run(cmd, args) {
