@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useShellStore } from '@/stores/shell'
+import { useRegistryStore } from '@/stores/registry'
 import type { InstalledApp, ShellAction } from '@/platform/contract'
 
 // —— 外部应用容器：应用包（classdesk-app 协议）和网页应用都跑在 iframe 里 ——
@@ -11,6 +12,7 @@ import type { InstalledApp, ShellAction } from '@/platform/contract'
 //   壳层 → 应用：{ source:'classdesk-shell', type:'invoke'|'visibility'|'settings.result', ... }
 const props = defineProps<{ app: InstalledApp }>()
 const shell = useShellStore()
+const registry = useRegistryStore()
 const { activeApp } = storeToRefs(shell)
 const frame = ref<HTMLIFrameElement | null>(null)
 
@@ -106,6 +108,10 @@ function onMessage(event: MessageEvent): void {
         await window.desk?.settings.set('system', key, value)
         if (key === 'developerOptions' && !value) {
           await window.desk?.settings.set('system', 'loadUnpackedFolders', false)
+        }
+        await registry.refresh()
+        if (shell.activeApp !== 'launcher' && !registry.byId(shell.activeApp)) {
+          shell.goHome()
         }
         post({ type: 'settings.result', reqId: data.reqId, value: true })
       })()
