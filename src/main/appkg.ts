@@ -9,7 +9,7 @@ import type { AppManifest } from '../shared/types'
 export const APP_ID_RE = /^[a-z0-9]+([._-][a-z0-9]+)*$/
 
 /** 保留 id：壳层自己用，应用不得占用。 */
-export const RESERVED_APP_IDS = new Set(['launcher', 'system'])
+export const RESERVED_APP_IDS = new Set(['launcher', 'system', 'cn.yizigezi.settings'])
 
 export function assertSafeAppId(id: unknown): asserts id is string {
   if (typeof id !== 'string' || !APP_ID_RE.test(id) || RESERVED_APP_IDS.has(id)) {
