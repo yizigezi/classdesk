@@ -492,7 +492,11 @@ function createWindow(): void {
     }
   })
 
-  win.on('ready-to-show', () => win.show())
+  win.on('ready-to-show', () => {
+    // 默认启动全屏；设置中关闭后则以普通窗口启动。
+    win.setFullScreen(settingsGet('system', 'startFullscreen') !== false)
+    win.show()
+  })
 
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
