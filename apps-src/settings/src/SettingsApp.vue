@@ -6,6 +6,7 @@ type Section = 'general' | 'developer'
 const section = ref<Section>('general')
 const developerOptions = ref(false)
 const loadUnpackedFolders = ref(false)
+const startFullscreen = ref(true)
 const loading = ref(true)
 const saving = ref(false)
 const notice = ref('')
@@ -18,8 +19,27 @@ async function loadSettings(): Promise<void> {
     developerOptions.value = (await getSystemSetting('developerOptions')) === true
     loadUnpackedFolders.value =
       developerOptions.value && (await getSystemSetting('loadUnpackedFolders')) === true
+    const savedFullscreen = await getSystemSetting('startFullscreen')
+    startFullscreen.value = savedFullscreen === null ? true : savedFullscreen === true
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleStartFullscreen(value: boolean): Promise<void> {
+  saving.value = true
+  notice.value = ''
+  try {
+    const ok = await setSystemSetting('startFullscreen', value)
+    if (!ok) throw new Error('设置未能保存，请稍后重试')
+    startFullscreen.value = value
+    notice.value = value
+      ? '已设置为下次启动时进入全屏'
+      : '已设置为下次启动时使用普通窗口'
+  } catch (error) {
+    notice.value = (error as Error).message || '设置保存失败'
+  } finally {
+    saving.value = false
   }
 }
 
@@ -110,6 +130,25 @@ onMounted(() => void loadSettings())
             <h2>课堂桌面</h2>
             <p>ClassDesk 桌面环境与应用管理</p>
             <span class="version-pill">版本 0.5.0</span>
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <div class="card-heading">启动行为</div>
+          <div class="setting-row">
+            <div class="setting-copy">
+              <div class="row-title">启动时全屏</div>
+              <div class="row-description">下次启动 ClassDesk 时进入全屏显示；当前窗口不会立即改变。</div>
+            </div>
+            <button
+              class="switch"
+              :class="{ on: startFullscreen }"
+              :disabled="saving"
+              type="button"
+              role="switch"
+              :aria-checked="startFullscreen"
+              @click="toggleStartFullscreen(!startFullscreen)"
+            ><span /></button>
           </div>
         </section>
 
