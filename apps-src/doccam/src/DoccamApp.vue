@@ -24,6 +24,27 @@ const deviceId = ref('')
 const frozen = ref(false)
 let stream: MediaStream | null = null
 
+// ── 摄像头清晰度 ──
+type ResolutionId = 'auto' | '480p' | '720p' | '1080p' | '1440p' | '2160p'
+interface ResolutionOption {
+  id: ResolutionId
+  label: string
+  width?: number
+  height?: number
+  fps?: number
+}
+
+const resolutionOptions: ResolutionOption[] = [
+  { id: 'auto', label: '自动' },
+  { id: '480p', label: '480p', width: 854, height: 480, fps: 30 },
+  { id: '720p', label: '720p', width: 1280, height: 720, fps: 30 },
+  { id: '1080p', label: '1080p', width: 1920, height: 1080, fps: 30 },
+  { id: '1440p', label: '1440p', width: 2560, height: 1440, fps: 30 },
+  { id: '2160p', label: '4K', width: 3840, height: 2160, fps: 30 }
+]
+const resolutionId = ref<ResolutionId>('1080p')
+const actualResolution = ref('')
+
 // ── 画面变换（拖动 / 缩放 / 旋转 / 镜像）──
 const view = reactive({ x: 0, y: 0, scale: 1, rotate: 0, mirror: false })
 
@@ -158,8 +179,17 @@ async function startCamera(id?: string): Promise<void> {
   cameraError.value = ''
   try {
     stopStream()
+    const resolution = resolutionOptions.find((item) => item.id === resolutionId.value)
+    const videoConstraints: MediaTrackConstraints = {}
+    if (id) videoConstraints.deviceId = { exact: id }
+    if (resolution?.width && resolution.height) {
+      videoConstraints.width = { ideal: resolution.width }
+      videoConstraints.height = { ideal: resolution.height }
+      videoConstraints.frameRate = { ideal: resolution.fps ?? 30, max: 60 }
+    }
+
     stream = await navigator.mediaDevices.getUserMedia({
-      video: id ? { deviceId: { exact: id } } : true
+      video: videoConstraints
     })
     const video = videoEl.value
     if (!video) return
@@ -167,6 +197,7 @@ async function startCamera(id?: string): Promise<void> {
     await video.play()
     baseSize.w = video.videoWidth || 1280
     baseSize.h = video.videoHeight || 720
+    actualResolution.value = `${baseSize.w}×${baseSize.h}`
     baseImageSrc.value = ''
     frozen.value = false
     sourceKind.value = 'camera'
@@ -177,6 +208,7 @@ async function startCamera(id?: string): Promise<void> {
     )
   } catch (err) {
     sourceKind.value = 'none'
+    actualResolution.value = ''
     cameraError.value = `摄像头不可用：${(err as Error).message}`
   }
 }
@@ -486,7 +518,11 @@ onBeforeUnmount(() => {
 })
 
 watch(deviceId, (id) => {
-  if (id && sourceKind.value === 'camera') void startCamera(id)
+  if (sourceKind.value === 'camera' || id) void startCamera(id || undefined)
+})
+
+watch(resolutionId, () => {
+  if (sourceKind.value === 'camera') void startCamera(deviceId.value || undefined)
 })
 
 watch([tool, brush], () => {
@@ -525,7 +561,7 @@ watch([tool, brush], () => {
       </div>
     </div>
 
-    <!-- 设置条：设备 / 延时 / 滤镜 / 笔 / 镜像 / 冻结 -->
+    <!-- 设置条：设备 / 清晰度 / 延时 / 滤镜 / 笔 / 镜像 / 冻结 -->
     <div class="dc-panel">
       <select v-model="deviceId" class="dc-select" title="摄像头">
         <option value="">默认摄像头</option>
@@ -533,6 +569,14 @@ watch([tool, brush], () => {
           {{ d.label || '摄像头' }}
         </option>
       </select>
+      <select v-model="resolutionId" class="dc-select" title="摄像头清晰度">
+        <option v-for="item in resolutionOptions" :key="item.id" :value="item.id">
+          {{ item.label }}
+        </option>
+      </select>
+      <span v-if="actualResolution" class="dc-resolution" title="摄像头实际输出分辨率">
+        {{ actualResolution }}
+      </span>
       <select v-model="delaySec" class="dc-select" title="延时拍照">
         <option :value="0">立即拍照</option>
         <option :value="3">延时 3 秒</option>
@@ -667,7 +711,7 @@ watch([tool, brush], () => {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
   filter: v-bind(filterCss);
 }
 
@@ -714,6 +758,13 @@ watch([tool, brush], () => {
 
 .dc-select option {
   color: #222;
+}
+
+.dc-resolution {
+  min-width: 74px;
+  color: rgba(232, 236, 243, 0.62);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .dc-sep {
