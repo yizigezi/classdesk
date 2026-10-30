@@ -217,7 +217,6 @@ function closeFile(): void {
 
 <template>
   <div class="pv-root" @dragover.prevent @drop.prevent="onDrop">
-    <!-- 文件输入常驻（底栏「打开」随时可用） -->
     <input
       ref="fileInput"
       class="pv-hidden"
@@ -226,20 +225,42 @@ function closeFile(): void {
       @change="onPick"
     />
 
-    <!-- 空态：选文件 -->
     <div v-if="!content" class="pv-empty">
-      <svg class="pv-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-        <rect x="3" y="4.5" width="18" height="12" rx="2.2" />
-        <path d="M12 16.5v3M8.6 19.5h6.8" />
-        <path d="M10.6 8.2l4 2.3-4 2.3z" fill="currentColor" stroke="none" />
-      </svg>
-      <div class="pv-empty-title">动画放映</div>
-      <div class="pv-empty-sub">打开 .pptx 课件，动画与切换效果照常播放</div>
-      <button class="pv-primary" type="button" @click="fileInput?.click()">打开 PPTX 文件</button>
-      <div class="pv-empty-hint">也可以把文件拖进这个区域</div>
+      <div class="pv-empty-art">
+        <div class="art-shadow"></div>
+        <div class="art-sheet">
+          <span class="art-kicker">CLASSDESK PRESENTATION</span>
+          <span class="art-title"></span>
+          <span class="art-line"></span>
+          <span class="art-line medium"></span>
+          <span class="art-line short"></span>
+          <span class="art-chart"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <span class="art-orbit"></span>
+      </div>
+      <span class="pv-eyebrow"><i></i> POWERPOINT WORKSPACE</span>
+      <div class="pv-empty-title">让想法，精彩呈现</div>
+      <div class="pv-empty-sub">打开 PowerPoint 课件，在 ClassDesk 中继续编辑或开始放映。</div>
+
+      <div class="pv-dropzone">
+        <span class="drop-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3.5 7.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/>
+            <path d="M12 12v5m-2-2 2 2 2-2"/>
+          </svg>
+        </span>
+        <strong>从文件开始</strong>
+        <span>选择一个课件，或将文件拖放到此处</span>
+        <button class="pv-primary" type="button" @click="fileInput?.click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 15V3m-4 4 4-4 4 4M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>
+          </svg>
+          选择 PPTX 文件
+        </button>
+      </div>
+      <div class="pv-formats"><span>PPTX</span><span>PPTM</span><span>PPSX</span><i></i><small>支持 PowerPoint 格式</small></div>
     </div>
 
-    <!-- 放映：画布等比缩放在应用窗口内（顶/底栏在壳层，一直可见） -->
     <template v-else>
       <PowerPointViewer
         ref="viewer"
@@ -257,152 +278,56 @@ function closeFile(): void {
         @mode-change="mode = $event"
       />
 
-      <!-- 解析中 -->
       <div v-if="loading" class="pv-loading">
-        <span class="pv-spin"></span>
-        <div>正在解析课件…</div>
+        <div class="pv-loading-card">
+          <span class="pv-spin"></span>
+          <div><strong>正在准备课件</strong><small>正在解析页面与动画资源…</small></div>
+        </div>
       </div>
 
-      <!-- 解析失败：重试 / 换个文件 -->
-      <div v-if="errorMsg" class="pv-banner">
-        <span class="pv-banner-text">{{ errorMsg }}</span>
-        <button class="pv-banner-btn" type="button" @click="retry">重试</button>
-        <button class="pv-banner-btn" type="button" @click="closeFile">换个文件</button>
+      <div v-if="errorMsg" class="pv-error-layer">
+        <section class="pv-error-card" role="alertdialog" aria-modal="true" aria-labelledby="pv-error-title">
+          <span class="pv-error-symbol">!</span>
+          <h2 id="pv-error-title">无法打开课件</h2>
+          <p>{{ errorMsg }}</p>
+          <div class="pv-error-actions">
+            <button type="button" class="pv-error-secondary" @click="closeFile">返回</button>
+            <button type="button" class="pv-error-primary" @click="retry">重试</button>
+          </div>
+        </section>
       </div>
     </template>
   </div>
 </template>
 
 <style scoped>
-.pv-root {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: #22262e;
-  user-select: none;
-}
-
-.pv-hidden {
-  display: none;
-}
-
-.pv-empty {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.pv-empty-icon {
-  width: 40px;
-  height: 40px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.pv-empty-title {
-  margin-top: 16px;
-  font-size: 20px;
-  font-weight: 500;
-}
-
-.pv-empty-sub {
-  margin-top: 6px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.pv-primary {
-  margin-top: 28px;
-  height: 44px;
-  padding: 0 36px;
-  border: 0;
-  border-radius: 999px;
-  background: #fff;
-  color: #22262e;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.pv-primary:hover {
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.pv-empty-hint {
-  margin-top: 12px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.pv-viewer {
-  width: 100%;
-  height: 100%;
-}
-
-.pv-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: #22262e;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-}
-
-.pv-spin {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
-  animation: pv-spin 0.9s linear infinite;
-}
-
-@keyframes pv-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.pv-banner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: rgba(140, 58, 46, 0.92);
-  color: #fff;
-  font-size: 13px;
-}
-
-.pv-banner-text {
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.pv-banner-btn {
-  border: 0;
-  border-radius: 999px;
-  padding: 4px 14px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.pv-banner-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
+.pv-root { position:absolute; inset:0; overflow:hidden; background:
+  radial-gradient(700px 440px at 18% 8%,rgba(102,128,194,.17),transparent 65%),
+  radial-gradient(620px 420px at 88% 88%,rgba(150,111,177,.13),transparent 65%),
+  linear-gradient(145deg,#171b26,#202633 58%,#1a202c); color:#f3f2f8; user-select:none; }
+.pv-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.pv-empty { display:flex; width:100%; height:100%; box-sizing:border-box; flex-direction:column; align-items:center; justify-content:center; overflow:auto; padding:26px 24px; text-align:center; }
+.pv-empty-art { position:relative; width:154px; height:112px; margin-bottom:18px; }
+.art-shadow { position:absolute; top:12px; left:27px; width:105px; height:80px; transform:rotate(8deg); border:1px solid rgba(255,255,255,.1); border-radius:18px; background:rgba(151,165,208,.18); }
+.art-sheet { position:absolute; inset:0 30px 16px 16px; display:flex; flex-direction:column; padding:14px 13px; transform:rotate(-5deg); border:1px solid rgba(255,255,255,.14); border-radius:18px; background:linear-gradient(145deg,#f7f7ff,#dfe5fb); box-shadow:0 16px 38px rgba(0,0,0,.24); }
+.art-kicker { color:#7380aa; font-size:5px; font-weight:800; letter-spacing:.13em; }
+.art-title { width:76%; height:7px; margin-top:11px; border-radius:6px; background:#404d7c; }
+.art-line { width:100%; height:3px; margin-top:6px; border-radius:5px; background:#aeb6d0; }.art-line.medium { width:80%; margin-top:4px; }.art-line.short { width:56%; margin-top:4px; }
+.art-chart { display:flex; height:25px; align-items:flex-end; gap:4px; margin-top:auto; }.art-chart i { width:10px; border-radius:4px 4px 1px 1px; background:linear-gradient(#9d8ad5,#6d74b5); }
+.art-chart i:nth-child(1){height:45%}.art-chart i:nth-child(2){height:72%}.art-chart i:nth-child(3){height:58%}.art-chart i:nth-child(4){height:94%}
+.art-orbit { position:absolute; right:2px; bottom:2px; width:35px; height:35px; border:7px solid #9bb0df; border-right-color:#dacff2; border-radius:50%; box-shadow:0 0 0 7px rgba(155,176,223,.1); }
+.pv-eyebrow { display:flex; align-items:center; gap:7px; color:#aeb9dc; font-size:9px; font-weight:800; letter-spacing:.16em; }.pv-eyebrow i { width:6px; height:6px; border-radius:50%; background:#a8b8ef; box-shadow:0 0 0 4px rgba(168,184,239,.12); }
+.pv-empty-title { margin-top:9px; color:#f5f4fb; font-size:27px; font-weight:700; letter-spacing:-.045em; }
+.pv-empty-sub { max-width:450px; margin-top:8px; color:rgba(226,230,244,.66); font-size:12px; line-height:1.8; }
+.pv-dropzone { display:flex; width:min(430px,calc(100vw - 48px)); box-sizing:border-box; flex-direction:column; align-items:center; margin-top:24px; padding:19px 18px 18px; border:1px dashed rgba(183,196,235,.28); border-radius:24px; background:rgba(255,255,255,.045); }
+.drop-icon { display:grid; width:42px; height:42px; place-items:center; border-radius:15px; background:rgba(181,194,239,.13); color:#c3cdf2; }.drop-icon svg { width:23px; height:23px; }
+.pv-dropzone strong { margin-top:9px; color:#f0eff8; font-size:13px; font-weight:650; }.pv-dropzone > span:not(.drop-icon) { margin-top:3px; color:rgba(222,227,243,.52); font-size:10px; }
+.pv-primary { display:inline-flex; min-height:40px; align-items:center; gap:8px; margin-top:14px; padding:0 18px; border:0; border-radius:999px; background:#d9e1ff; color:#17213c; font:750 11px inherit; cursor:pointer; transition:transform .18s ease,background .18s ease; }.pv-primary svg { width:16px; height:16px; }.pv-primary:hover { transform:translateY(-1px); background:#e8ebff; }.pv-primary:active { transform:scale(.98); }
+.pv-formats { display:flex; align-items:center; gap:6px; margin-top:13px; color:#aab3cd; }.pv-formats span { padding:3px 7px; border:1px solid rgba(185,197,230,.14); border-radius:7px; background:rgba(255,255,255,.05); font-size:8px; font-weight:700; letter-spacing:.04em; }.pv-formats i { width:3px; height:3px; margin:0 3px; border-radius:50%; background:rgba(200,209,231,.4); }.pv-formats small { color:rgba(221,226,242,.45); font-size:9px; }
+.pv-viewer { width:100%; height:100%; }
+.pv-loading,.pv-error-layer { position:absolute; inset:0; display:grid; place-items:center; padding:24px; background:rgba(12,15,23,.5); backdrop-filter:blur(14px); }.pv-loading { z-index:30; }.pv-error-layer { z-index:40; }
+.pv-loading-card { display:flex; align-items:center; gap:14px; padding:20px 24px; border:1px solid rgba(255,255,255,.12); border-radius:22px; background:rgba(36,43,59,.94); box-shadow:0 18px 55px rgba(0,0,0,.25); }.pv-spin { width:27px; height:27px; border:3px solid rgba(205,214,248,.2); border-top-color:#c5d0ff; border-radius:50%; animation:pv-spin .8s linear infinite; }.pv-loading-card div { display:flex; flex-direction:column; gap:4px; text-align:left; }.pv-loading-card strong { color:#f4f3fb; font-size:13px; }.pv-loading-card small { color:rgba(220,225,242,.56); font-size:10px; }
+.pv-error-card { width:min(390px,100%); box-sizing:border-box; padding:25px; border:1px solid rgba(255,255,255,.13); border-radius:28px; background:#282d3c; box-shadow:0 24px 70px rgba(0,0,0,.35); color:#f4f2f8; text-align:left; }.pv-error-symbol { display:grid; width:38px; height:38px; place-items:center; border-radius:14px; background:#593c4b; color:#ffc1c5; font-size:20px; font-weight:800; }.pv-error-card h2 { margin:16px 0 0; font-size:19px; font-weight:700; letter-spacing:-.03em; }.pv-error-card p { margin:8px 0 0; color:rgba(232,230,241,.66); font-size:12px; line-height:1.7; }
+.pv-error-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:23px; }.pv-error-actions button { min-height:38px; padding:0 16px; border:0; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; transition:transform .16s ease,background .16s ease; }.pv-error-secondary { background:rgba(255,255,255,.08); color:#e8e7f2; }.pv-error-secondary:hover { background:rgba(255,255,255,.14); }.pv-error-primary { background:#d9e1ff; color:#17213c; }.pv-error-primary:hover { background:#e8ebff; }.pv-error-actions button:active { transform:scale(.98); }
+@keyframes pv-spin { to { transform:rotate(360deg); } }
 </style>
