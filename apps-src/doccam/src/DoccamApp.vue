@@ -682,7 +682,7 @@ watch([tool, brush], () => {
           {{ cameraError || '连接实物展台或摄像头，也可以打开图片进行批注与讲解。' }}
         </p>
         <div class="dc-empty-actions">
-          <button class="dc-primary" type="button" @click="startCamera">
+          <button class="dc-primary" type="button" @click="startCamera()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <rect x="3" y="6" width="18" height="13" rx="3"/>
               <circle cx="12" cy="12.5" r="3.5"/>
