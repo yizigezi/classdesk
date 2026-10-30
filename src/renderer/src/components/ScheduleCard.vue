@@ -18,7 +18,7 @@ const lessons = [
 
     <div class="schedule-date">
       <div><strong>今天的安排</strong><span>保持节奏，稳步向前</span></div>
-      <span class="date-icon"><SvgIcon name="calendar" class="h-4 w-4" /></span>
+      <span class="date-icon"><SvgIcon name="clock" class="h-4 w-4" /></span>
     </div>
 
     <ul class="lesson-list">

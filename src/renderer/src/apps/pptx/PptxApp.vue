@@ -262,11 +262,11 @@ function closeFile(): void {
       <p class="pptx-description">打开 PowerPoint 课件，在 ClassDesk 中继续编辑或开始放映。</p>
 
       <div class="pptx-dropzone">
-        <span class="drop-icon"><SvgIcon name="folder-open" class="h-6 w-6" /></span>
+        <span class="drop-icon"><SvgIcon name="folder" class="h-6 w-6" /></span>
         <strong>从文件开始</strong>
         <span>选择一个课件，或将文件拖放到此处</span>
         <button class="pptx-primary" type="button" @click="fileInput?.click()">
-          <SvgIcon name="upload" class="h-4 w-4" />
+          <SvgIcon name="download" class="h-4 w-4" />
           选择 PPTX 文件
         </button>
       </div>

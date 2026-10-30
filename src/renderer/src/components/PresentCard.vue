@@ -46,7 +46,7 @@ function startPresent(): void {
         <button class="present-action no-drag" type="button" @click="startPresent">
           <SvgIcon name="play" class="h-4 w-4" />
           <span>开始演示</span>
-          <SvgIcon name="arrow-right" class="h-4 w-4" />
+          <SvgIcon name="next" class="h-4 w-4" />
         </button>
       </div>
     </div>
