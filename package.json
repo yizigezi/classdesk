@@ -1,14 +1,14 @@
 {
-  "name": "classdesk",
+  "name": "quickclass-de",
   "version": "0.5.0",
-  "description": "课堂桌面工具",
+  "description": "QuickClass Desktop Environment",
   "author": "yizigezi",
   "private": true,
   "main": "./out/main/index.js",
   "build": {
-    "appId": "cn.yizigezi.classdesk",
-    "productName": "classdesk",
-    "artifactName": "classdesk-win32-x64-${version}.${ext}",
+    "appId": "cn.yizigezi.quickclassde",
+    "productName": "QuickClass DE",
+    "artifactName": "quickclass-de-win32-x64-${version}.${ext}",
     "directories": {
       "output": "dist-test",
       "buildResources": ".tmp/build-resources"
