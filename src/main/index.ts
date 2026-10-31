@@ -1,9 +1,7 @@
 // —— classdesk 主进程：窗口 / 壁纸 / 应用仓库 / 设置库 / 可移动存储 ——
-import { app, BrowserWindow, dialog, ipcMain, net, protocol, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, protocol, session, shell } from 'electron'
 import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { copyFile, cp, mkdir, stat } from 'node:fs/promises'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { dirname, extname, join, resolve } from 'node:path'
 import {
   APP_ID_RE,
@@ -22,42 +20,15 @@ import {
 import type {
   AppManifest,
   CreateWebResult,
-  DriveInfo,
   InstallResult,
   InstalledApp
 } from '../shared/types'
+import { registerDriveIpc } from './drives'
+import { registerWallpaperIpc } from './wallpaper'
+import { createMainWindow } from './window'
 
-const execFileAsync = promisify(execFile)
-
-// ─────────────────────────── 壁纸 ───────────────────────────
-
-const BING_ARCHIVE = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN'
-
-interface BingArchive {
-  images?: Array<{ urlbase?: string }>
-}
-
-let wallpaperCache: { day: string; url: string | null } | null = null
-
-async function fetchWallpaperUrl(): Promise<string | null> {
-  const day = new Date().toISOString().slice(0, 10)
-  if (wallpaperCache?.day === day) return wallpaperCache.url
-
-  let url: string | null = null
-  try {
-    const res = await fetch(BING_ARCHIVE)
-    if (res.ok) {
-      const data = (await res.json()) as BingArchive
-      const urlbase = data.images?.[0]?.urlbase
-      if (urlbase) url = `https://www.bing.com${urlbase}_1920x1080.jpg`
-    }
-  } catch {
-    url = null
-  }
-
-  wallpaperCache = { day, url }
-  return url
-}
+registerWallpaperIpc()
+registerDriveIpc()
 
 // ─────────────────────────── 应用仓库 ───────────────────────────
 // 应用包两种形态：文件夹包（开发用）和 .cdapp（asar 归档包，发布用）。
@@ -381,138 +352,7 @@ function registerAppProtocol(): void {
   })
 }
 
-// ─────────────────────────── 可移动存储 ───────────────────────────
-
-/** 开发/截图用假磁盘：CLASSDESK_FAKE_DRIVES="U盘|/media/fake-usb;SD卡|/media/fake-sd" */
-function fakeDrives(): DriveInfo[] {
-  const raw = process.env.CLASSDESK_FAKE_DRIVES
-  if (!raw) return []
-  return raw
-    .split(';')
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item) => {
-      const [label, path] = item.split('|').map((s) => s.trim())
-      return { id: path || label, label: label || path, path: path || label }
-    })
-    .filter((d) => d.label)
-}
-
-async function windowsDrives(): Promise<DriveInfo[]> {
-  // 卷标可能是中文：卷标一律 Base64 回传，绕开 PowerShell 控制台编码坑；
-  // 可移动磁盘（DriveType=2）和 USB 接口磁盘（U 盘/移动硬盘）都算
-  const script = [
-    '$map = @{}',
-    'Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 } | ForEach-Object { $map[[string]$_.DeviceID] = [string]$_.VolumeName }',
-    'Get-Disk | Where-Object { $_.BusType -eq "USB" } | ForEach-Object { Get-Partition -DiskNumber $_.Number } | Where-Object { $_.DriveLetter } | ForEach-Object {',
-    '  $id = [string]$_.DriveLetter + ":"',
-    '  if (-not $map.ContainsKey($id)) {',
-    '    $label = ""',
-    '    try { $label = [string](Get-Volume -DriveLetter $_.DriveLetter).VolumeLabel } catch {}',
-    '    $map[$id] = $label',
-    '  }',
-    '}',
-    '$map.GetEnumerator() | ForEach-Object { $_.Key + "|" + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($_.Value)) }'
-  ].join('\n')
-
-  const { stdout } = await execFileAsync(
-    'powershell',
-    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
-    { windowsHide: true, encoding: 'utf8', maxBuffer: 1024 * 1024 }
-  )
-
-  const out: DriveInfo[] = []
-  for (const line of stdout.split(/\r?\n/)) {
-    const [root, b64] = line.trim().split('|')
-    if (!root || !/^[A-Za-z]:$/.test(root)) continue
-    let label = ''
-    try {
-      label = Buffer.from(b64 ?? '', 'base64').toString('utf8').trim()
-    } catch {
-      label = ''
-    }
-    out.push({ id: root, label: label || root, path: root.endsWith('\\') ? root : `${root}\\` })
-  }
-  return out
-}
-
-async function linuxDrives(): Promise<DriveInfo[]> {
-  const { stdout } = await execFileAsync('lsblk', ['-J', '-o', 'NAME,LABEL,MOUNTPOINT,RM,TYPE'])
-  interface LsblkNode {
-    name?: string
-    label?: string
-    mountpoint?: string | null
-    rm?: string | number
-    type?: string
-    children?: LsblkNode[]
-  }
-  const data = JSON.parse(stdout) as { blockdevices?: LsblkNode[] }
-  const out: DriveInfo[] = []
-  const walk = (nodes: LsblkNode[]): void => {
-    for (const n of nodes) {
-      if (n.children) walk(n.children)
-      const removable = n.rm === 1 || n.rm === '1'
-      if (!removable || !n.mountpoint) continue
-      out.push({ id: n.mountpoint, label: n.label || n.name || n.mountpoint, path: n.mountpoint })
-    }
-  }
-  walk(data.blockdevices ?? [])
-  return out
-}
-
-async function listRemovableDrives(): Promise<DriveInfo[]> {
-  const fake = fakeDrives()
-  if (fake.length) return fake
-  try {
-    if (process.platform === 'win32') return await windowsDrives()
-    if (process.platform === 'linux') return await linuxDrives()
-  } catch (err) {
-    // 枚举失败按无设备处理，不打断界面（方便排查：留一条日志）
-    console.warn('[drives] enumerate failed:', (err as Error).message)
-  }
-  return []
-}
-
-// ─────────────────────────── 窗口 ───────────────────────────
-
-function createWindow(): void {
-  const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1280,
-    minHeight: 800,
-    frame: false,
-    show: false,
-    autoHideMenuBar: true,
-    backgroundColor: '#eef0f4',
-    title: '课堂桌面',
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
-
-  win.on('ready-to-show', () => {
-    // 默认启动全屏；设置中关闭后则以普通窗口启动。
-    win.setFullScreen(settingsGet('system', 'startFullscreen') !== false)
-    win.show()
-  })
-
-  win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  if (process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL)
-  } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-}
-
 // ─────────────────────────── IPC ───────────────────────────
-
-ipcMain.handle('wallpaper:today', () => fetchWallpaperUrl())
 
 ipcMain.handle('apps:list', () => scanApps())
 
@@ -581,13 +421,6 @@ ipcMain.handle(
   }
 )
 
-ipcMain.handle('drives:list', () => listRemovableDrives())
-
-ipcMain.handle('drives:open', async (_e, path: string) => {
-  if (typeof path !== 'string' || !path) return '路径为空'
-  return shell.openPath(path) // 返回错误信息，空串 = 成功
-})
-
 // —— 设置库（scope：'system' 或应用 id；值走 JSON）——
 ipcMain.handle('settings:get', (_e, scope: string, key: string) => settingsGet(scope, key))
 ipcMain.handle('settings:set', (_e, scope: string, key: string, value: SettingValue) => {
@@ -626,10 +459,10 @@ app.whenReady().then(() => {
     callback(local && mediaLike.has(permission))
   })
 
-  createWindow()
+  createMainWindow()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })
 })
 
