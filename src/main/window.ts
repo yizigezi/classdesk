@@ -1,13 +1,12 @@
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { settingsGet } from './settings'
 
 export function createMainWindow(): void {
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
   const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 1280,
-    minHeight: 800,
+    width,
+    height,
     frame: false,
     show: false,
     autoHideMenuBar: true,
