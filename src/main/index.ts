@@ -5,6 +5,7 @@ import { copyFile, cp, mkdir, stat } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
 import {
   APP_ID_RE,
+  RESERVED_APP_IDS,
   assertSafeAppId,
   openAppPackage,
   type AppPackageReader
@@ -130,9 +131,12 @@ function canLoadUnpackedFolders(): boolean {
 function scanApps(): InstalledApp[] {
   const out: InstalledApp[] = []
   for (const pkg of scanDir(systemAppsDir())) {
+    if (pkg.id === 'cn.yizigezi.settings') continue
     out.push(toInstalledApp(pkg.pkgPath, pkg.kind, pkg.reader.manifest, 'system'))
   }
   for (const pkg of scanDir(userAppsDir())) {
+    // Reserved IDs must not be reintroduced by manually copying a package into apps/.
+    if (RESERVED_APP_IDS.has(pkg.id)) continue
     // 关闭开发者选项后，用户安装的未打包目录不会被加载；.cdapp 不受影响。
     if (pkg.kind === 'dir' && !canLoadUnpackedFolders()) continue
     out.push(toInstalledApp(pkg.pkgPath, pkg.kind, pkg.reader.manifest, 'user'))
@@ -142,6 +146,7 @@ function scanApps(): InstalledApp[] {
 }
 
 function findUserPackage(id: string, includeDisabledFolders = false): ScannedPackage | null {
+  if (RESERVED_APP_IDS.has(id)) return null
   const pkg = scanDir(userAppsDir()).find((p) => p.id === id) ?? null
   if (pkg?.kind === 'dir' && !includeDisabledFolders && !canLoadUnpackedFolders()) return null
   return pkg
@@ -341,7 +346,9 @@ function registerAppProtocol(): void {
     // 用户安装的优先于内置的
     const pkg =
       findUserPackage(appId) ??
-      scanDir(systemAppsDir()).find((p) => p.id === appId) ??
+      scanDir(systemAppsDir()).find((p) =>
+        p.id === appId && p.id !== 'cn.yizigezi.settings'
+      ) ??
       null
     if (!pkg) return new Response('not found', { status: 404 })
 

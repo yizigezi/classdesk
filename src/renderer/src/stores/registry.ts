@@ -6,13 +6,33 @@ import type { CreateWebResult, InstallResult } from '../../../shared/types'
 
 /** 「演示」应用包的 id（随程序分发的内置应用）。 */
 export const PRESENT_APP_ID = 'cn.yizigezi.pptx'
+export const SETTINGS_APP_ID = 'cn.yizigezi.settings'
+
+const settingsApp: InstalledApp = {
+  id: SETTINGS_APP_ID,
+  name: '设置',
+  version: '0.5.0',
+  icon: 'setting',
+  entry: '',
+  description: 'ClassDesk 系统设置与开发者选项',
+  permissions: [],
+  type: 'app',
+  url: '',
+  pkgPath: 'builtin:settings',
+  kind: 'dir',
+  source: 'system',
+  removable: false
+}
 
 export const useRegistryStore = defineStore('registry', () => {
   const apps = ref<InstalledApp[]>([])
   const error = ref('')
   const busy = ref(false)
 
-  const entries = computed<AppEntry[]>(() => apps.value)
+  const entries = computed<AppEntry[]>(() =>
+    [...apps.value.filter((app) => app.id !== SETTINGS_APP_ID), settingsApp]
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+  )
 
   function byId(id: string): AppEntry | null {
     return entries.value.find((a) => a.id === id) ?? null
