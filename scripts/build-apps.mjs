@@ -11,8 +11,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 
 const APPS = [
   { id: 'cn.yizigezi.pptx', dir: 'pptx' },
-  { id: 'cn.yizigezi.doccam', dir: 'doccam' },
-  { id: 'cn.yizigezi.settings', dir: 'settings' }
+  { id: 'cn.yizigezi.doccam', dir: 'doccam' }
 ]
 
 function run(cmd, args) {
@@ -30,6 +29,7 @@ function run(cmd, args) {
 const asar = await import('@electron/asar')
 
 mkdirSync(join(root, 'dist-apps'), { recursive: true })
+rmSync(join(root, 'dist-apps', 'cn.yizigezi.settings.cdapp'), { force: true })
 
 for (const app of APPS) {
   const buildDir = join(root, '.apps-build', app.id)

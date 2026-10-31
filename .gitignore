@@ -6,3 +6,4 @@ dist*
 .DS_Store
 .apps-build
 /apps/
+classdesk.db

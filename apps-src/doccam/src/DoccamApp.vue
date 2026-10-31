@@ -541,7 +541,6 @@ watch([tool, brush], () => {
     @pointercancel="onPointerUp"
     @wheel="onWheel"
   >
-    <!-- 画面 + 墨迹（同一坐标系，一起缩放 / 拖动 / 旋转） -->
     <div ref="stageEl" class="dc-stage">
       <div ref="contentEl" class="dc-content" :style="contentStyle">
         <video
@@ -561,113 +560,166 @@ watch([tool, brush], () => {
       </div>
     </div>
 
-    <!-- 设置条：设备 / 清晰度 / 延时 / 滤镜 / 笔 / 镜像 / 冻结 -->
-    <div class="dc-panel">
-      <select v-model="deviceId" class="dc-select" title="摄像头">
-        <option value="">默认摄像头</option>
-        <option v-for="d in devices" :key="d.deviceId" :value="d.deviceId">
-          {{ d.label || '摄像头' }}
-        </option>
-      </select>
-      <select v-model="resolutionId" class="dc-select" title="摄像头清晰度">
-        <option v-for="item in resolutionOptions" :key="item.id" :value="item.id">
-          {{ item.label }}
-        </option>
-      </select>
-      <span v-if="actualResolution" class="dc-resolution" title="摄像头实际输出分辨率">
-        {{ actualResolution }}
-      </span>
-      <select v-model="delaySec" class="dc-select" title="延时拍照">
-        <option :value="0">立即拍照</option>
-        <option :value="3">延时 3 秒</option>
-        <option :value="5">延时 5 秒</option>
-        <option :value="10">延时 10 秒</option>
-      </select>
-      <select v-model="filter" class="dc-select" title="画面效果">
-        <option value="color">彩色</option>
-        <option value="gray">灰度</option>
-        <option value="mono">黑白</option>
-        <option value="invert">负片</option>
-        <option value="warm">暖色</option>
-      </select>
+    <div class="dc-panel" role="toolbar" aria-label="展台画面设置">
+      <div class="dc-panel-brand">
+        <span class="dc-brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="6" width="18" height="13" rx="3"/>
+            <circle cx="12" cy="12.5" r="3.5"/>
+            <path d="M8 6l1.2-2h5.6L16 6"/>
+          </svg>
+        </span>
+        <span class="dc-brand-copy"><strong>展台</strong><small>CLASSDESK DOC CAM</small></span>
+      </div>
 
       <span class="dc-sep"></span>
 
-      <span class="dc-swatches">
+      <div class="dc-control-group">
+        <span class="dc-group-label">设备</span>
+        <select v-model="deviceId" class="dc-select" title="摄像头">
+          <option value="">默认摄像头</option>
+          <option v-for="d in devices" :key="d.deviceId" :value="d.deviceId">
+            {{ d.label || '摄像头' }}
+          </option>
+        </select>
+      </div>
+
+      <div class="dc-control-group">
+        <span class="dc-group-label">清晰度</span>
+        <select v-model="resolutionId" class="dc-select" title="摄像头清晰度">
+          <option v-for="item in resolutionOptions" :key="item.id" :value="item.id">
+            {{ item.label }}
+          </option>
+        </select>
+        <span v-if="actualResolution" class="dc-resolution" title="摄像头实际输出分辨率">
+          {{ actualResolution }}
+        </span>
+      </div>
+
+      <div class="dc-control-group">
+        <span class="dc-group-label">拍摄</span>
+        <select v-model="delaySec" class="dc-select" title="延时拍照">
+          <option :value="0">立即拍照</option>
+          <option :value="3">延时 3 秒</option>
+          <option :value="5">延时 5 秒</option>
+          <option :value="10">延时 10 秒</option>
+        </select>
+        <select v-model="filter" class="dc-select" title="画面效果">
+          <option value="color">彩色</option>
+          <option value="gray">灰度</option>
+          <option value="mono">黑白</option>
+          <option value="invert">负片</option>
+          <option value="warm">暖色</option>
+        </select>
+      </div>
+
+      <span class="dc-sep"></span>
+
+      <div class="dc-control-group dc-tool-group">
+        <span class="dc-group-label">批注</span>
+        <span class="dc-swatches">
+          <button
+            v-for="c in COLORS"
+            :key="c"
+            class="dc-swatch"
+            :class="brush.color === c ? 'is-on' : ''"
+            :style="{ background: c }"
+            :title="'笔色 ' + c"
+            type="button"
+            @click="brush.color = c"
+          ></button>
+        </span>
+        <span class="dc-swatches">
+          <button
+            v-for="s in SIZES"
+            :key="s"
+            class="dc-size"
+            :class="brush.size === s ? 'is-on' : ''"
+            :title="'粗细 ' + s"
+            type="button"
+            @click="brush.size = s"
+          >
+            <span class="dc-size-dot" :style="{ width: s + 4 + 'px', height: s + 4 + 'px' }"></span>
+          </button>
+        </span>
+      </div>
+
+      <span class="dc-sep"></span>
+
+      <div class="dc-control-group dc-view-group">
         <button
-          v-for="c in COLORS"
-          :key="c"
-          class="dc-swatch"
-          :class="brush.color === c ? 'is-on' : ''"
-          :style="{ background: c }"
-          :title="'笔色 ' + c"
+          class="dc-btn"
+          :class="view.mirror ? 'is-on' : ''"
           type="button"
-          @click="brush.color = c"
-        ></button>
-      </span>
-      <span class="dc-swatches">
+          @click="view.mirror = !view.mirror"
+        >镜像</button>
         <button
-          v-for="s in SIZES"
-          :key="s"
-          class="dc-size"
-          :class="brush.size === s ? 'is-on' : ''"
-          :title="'粗细 ' + s"
+          class="dc-btn"
+          :class="frozen ? 'is-on' : ''"
           type="button"
-          @click="brush.size = s"
-        >
-          <span class="dc-size-dot" :style="{ width: s + 4 + 'px', height: s + 4 + 'px' }"></span>
+          :disabled="sourceKind !== 'camera' || !!baseImageSrc"
+          @click="toggleFreeze"
+        >{{ frozen ? '恢复画面' : '冻结画面' }}</button>
+        <button v-if="baseImageSrc" class="dc-btn dc-resume-btn" type="button" @click="resumePreview">
+          继续预览
         </button>
-      </span>
-
-      <span class="dc-sep"></span>
-
-      <button
-        class="dc-btn"
-        :class="view.mirror ? 'is-on' : ''"
-        type="button"
-        @click="view.mirror = !view.mirror"
-      >
-        镜像
-      </button>
-      <button
-        class="dc-btn"
-        :class="frozen ? 'is-on' : ''"
-        type="button"
-        :disabled="sourceKind !== 'camera' || !!baseImageSrc"
-        @click="toggleFreeze"
-      >
-        冻结
-      </button>
-      <button v-if="baseImageSrc" class="dc-btn" type="button" @click="resumePreview">
-        继续预览
-      </button>
-    </div>
-
-    <!-- 无画面：开摄像头 / 打开图片 -->
-    <div v-if="sourceKind === 'none'" class="dc-empty">
-      <div class="dc-empty-title">{{ cameraError || '没有画面' }}</div>
-      <div class="dc-empty-sub">可以接上展台 / 摄像头，或者打开一张图片来批注</div>
-      <div class="dc-empty-actions">
-        <button class="dc-primary" type="button" @click="startCamera()">打开摄像头</button>
-        <button class="dc-ghost" type="button" @click="fileInput?.click()">打开图片</button>
       </div>
     </div>
 
-    <!-- 延时拍照倒计时 -->
-    <div v-if="countdown > 0" class="dc-count">{{ countdown }}</div>
+    <div v-if="sourceKind === 'none'" class="dc-empty">
+      <section class="dc-empty-card">
+        <div class="dc-empty-art">
+          <span class="dc-art-back"></span>
+          <span class="dc-art-front">
+            <i></i><i></i><i></i>
+            <b></b>
+          </span>
+          <span class="dc-art-lens"></span>
+        </div>
+        <span class="dc-empty-kicker"><i></i> CLASSDESK DOCUMENT CAMERA</span>
+        <h1 class="dc-empty-title">{{ cameraError ? '设备暂不可用' : '准备好开始展示' }}</h1>
+        <p class="dc-empty-sub">
+          {{ cameraError || '连接实物展台或摄像头，也可以打开图片进行批注与讲解。' }}
+        </p>
+        <div class="dc-empty-actions">
+          <button class="dc-primary" type="button" @click="startCamera()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="6" width="18" height="13" rx="3"/>
+              <circle cx="12" cy="12.5" r="3.5"/>
+              <path d="M8 6l1.2-2h5.6L16 6"/>
+            </svg>
+            打开摄像头
+          </button>
+          <button class="dc-ghost" type="button" @click="fileInput?.click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M3.5 7.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/>
+              <path d="M12 12v5m-2-2 2 2 2-2"/>
+            </svg>
+            打开图片
+          </button>
+        </div>
+        <div class="dc-empty-foot"><span>实时画面</span><i></i><span>拍照存档</span><i></i><span>墨迹批注</span></div>
+      </section>
+    </div>
 
-    <!-- 相册 -->
+    <div v-if="countdown > 0" class="dc-count">
+      <div class="dc-count-card"><strong>{{ countdown }}</strong><span>即将拍摄</span></div>
+    </div>
+
     <div v-if="captures.length" class="dc-gallery">
-      <button
-        v-for="c in captures"
-        :key="c.id"
-        class="dc-thumb"
-        type="button"
-        title="查看这张"
-        @click="openCapture(c.url)"
-      >
-        <img :src="c.url" alt="" />
-      </button>
+      <div class="dc-gallery-head"><strong>最近拍摄</strong><span>{{ captures.length }} 张</span></div>
+      <div class="dc-gallery-strip">
+        <button
+          v-for="c in captures"
+          :key="c.id"
+          class="dc-thumb"
+          type="button"
+          title="查看这张"
+          @click="openCapture(c.url)"
+        >
+          <img :src="c.url" alt="" />
+        </button>
+      </div>
     </div>
 
     <input ref="fileInput" class="dc-hidden" type="file" accept="image/*" @change="onPickImage" />
@@ -675,237 +727,111 @@ watch([tool, brush], () => {
 </template>
 
 <style scoped>
-.dc-root {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: #10141b;
-  user-select: none;
-  touch-action: none;
-}
+.dc-root { position:absolute; inset:0; overflow:hidden; background:#10141b; user-select:none; touch-action:none; }
+.dc-tool-pan { cursor:grab; }.dc-tool-draw { cursor:crosshair; }
+.dc-stage { position:absolute; inset:0; overflow:hidden; }
+.dc-content { position:absolute; left:50%; top:50%; transform-origin:center center; background:#000; }
+.dc-media { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:v-bind(filterCss); }
+.dc-ink { position:absolute; inset:0; width:100%; height:100%; }
+.dc-hidden { display:none; }
 
-.dc-tool-pan {
-  cursor: grab;
-}
-
-.dc-tool-draw {
-  cursor: crosshair;
-}
-
-.dc-stage {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.dc-content {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform-origin: center center;
-  background: #000;
-}
-
-.dc-media {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: v-bind(filterCss);
-}
-
-.dc-ink {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.dc-hidden {
-  display: none;
-}
-
-/* 设置条 */
 .dc-panel {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: rgba(18, 21, 27, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  color: #e8ecf3;
-  font-size: 12px;
-  white-space: nowrap;
+  position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:13px;
+  max-width:calc(100% - 28px); overflow-x:auto; padding:10px 14px; border:1px solid rgba(211,220,255,.13);
+  border-radius:22px; background:rgba(22,27,38,.82) !important; color:#e8ecf3; white-space:nowrap;
+  box-shadow:0 14px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter:blur(24px) saturate(1.35) !important; -webkit-backdrop-filter:blur(24px) saturate(1.35) !important;
+  scrollbar-width:none;
 }
-
+.dc-panel::-webkit-scrollbar { display:none; }
+.dc-panel-brand { display:flex; flex:0 0 auto; align-items:center; gap:9px; padding-right:2px; }
+.dc-brand-icon { display:grid; width:36px; height:36px; place-items:center; border-radius:13px; background:#dce4ff; color:#293b69; }
+.dc-brand-icon svg { width:19px; height:19px; }
+.dc-brand-copy { display:flex; flex-direction:column; gap:1px; }
+.dc-brand-copy strong { color:#f3f4fb; font-size:12px; font-weight:750; }
+.dc-brand-copy small { color:rgba(221,228,248,.46); font-size:7px; font-weight:750; letter-spacing:.12em; }
+.dc-control-group { display:flex; flex:0 0 auto; align-items:center; gap:6px; }
+.dc-group-label { margin-right:2px; color:rgba(210,219,244,.46); font-size:9px; font-weight:700; }
 .dc-select {
-  height: 30px;
-  padding: 0 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8ecf3;
-  font-size: 12px;
-  outline: none;
+  height:32px; max-width:150px; padding:0 10px; border:1px solid rgba(255,255,255,.13); border-radius:11px;
+  background:rgba(255,255,255,.065); color:#e8ecf3; font-size:11px; outline:none;
+  transition:border-color .16s ease,background .16s ease,box-shadow .16s ease;
 }
+.dc-select:hover { border-color:rgba(177,194,255,.48); background:rgba(255,255,255,.1); }
+.dc-select:focus-visible,.dc-btn:focus-visible,.dc-primary:focus-visible,.dc-ghost:focus-visible,.dc-swatch:focus-visible,.dc-size:focus-visible,.dc-thumb:focus-visible { outline:2px solid #afc2ff; outline-offset:2px; }
+.dc-select option { color:#222; }
+.dc-resolution { min-width:64px; color:rgba(232,236,243,.5); font-size:9px; font-variant-numeric:tabular-nums; text-align:center; }
+.dc-sep { width:1px; height:25px; flex:0 0 auto; background:rgba(255,255,255,.14); }
+.dc-swatches { display:flex; align-items:center; gap:5px; }
+.dc-swatch { width:18px; height:18px; border:2px solid rgba(255,255,255,.24); border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,.2); transition:transform .16s ease,box-shadow .16s ease; }
+.dc-swatch:hover { transform:scale(1.1); }
+.dc-swatch.is-on { border-color:#fff; box-shadow:0 0 0 2px rgba(174,193,255,.66),0 0 14px rgba(124,156,255,.2); transform:scale(1.08); }
+.dc-size { display:grid; width:25px; height:25px; place-items:center; border-radius:9px; background:rgba(255,255,255,.07); }
+.dc-size:hover { background:rgba(255,255,255,.13); }
+.dc-size.is-on { background:rgba(174,193,255,.2); box-shadow:inset 0 0 0 1px rgba(174,193,255,.48); }
+.dc-size-dot { display:block; border-radius:50%; background:#e8ecf3; }
+.dc-btn { height:32px; padding:0 11px; border:1px solid transparent; border-radius:999px; background:rgba(255,255,255,.075); color:#e8ecf3; font-size:10px; font-weight:650; transition:background .16s ease,transform .16s ease,border-color .16s ease; }
+.dc-btn:hover:not(:disabled) { transform:translateY(-1px); background:rgba(255,255,255,.14); }
+.dc-btn.is-on { border-color:rgba(174,193,255,.42); background:rgba(174,193,255,.18); color:#e7edff; }
+.dc-btn:disabled { cursor:default; opacity:.35; }
+.dc-resume-btn { background:#dce4ff; color:#24345d; }
 
-.dc-select option {
-  color: #222;
-}
-
-.dc-resolution {
-  min-width: 74px;
-  color: rgba(232, 236, 243, 0.62);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.dc-sep {
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.dc-swatches {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.dc-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-}
-
-.dc-swatch.is-on {
-  border-color: #fff;
-  transform: scale(1.12);
-}
-
-.dc-size {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.dc-size.is-on {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-.dc-size-dot {
-  border-radius: 50%;
-  background: #e8ecf3;
-}
-
-.dc-btn {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 12px;
-}
-
-.dc-btn.is-on {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* 空态 */
 .dc-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(16, 20, 27, 0.92);
+  position:absolute; inset:0; display:grid; place-items:center; padding:24px;
+  background:radial-gradient(ellipse at 50% 38%,rgba(89,111,177,.22),transparent 48%),rgba(12,16,23,.94) !important;
+  backdrop-filter:blur(12px);
 }
-
-.dc-empty-title {
-  font-size: 18px;
-  font-weight: 500;
+.dc-empty-card {
+  display:flex; width:min(500px,100%); box-sizing:border-box; flex-direction:column; align-items:center;
+  padding:32px 34px 26px; border:1px solid rgba(213,222,255,.14); border-radius:34px;
+  background:linear-gradient(145deg,rgba(39,47,66,.96),rgba(28,34,49,.96));
+  box-shadow:0 28px 80px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.055); text-align:center;
 }
+.dc-empty-art { position:relative; width:114px; height:90px; margin-bottom:18px; }
+.dc-art-back { position:absolute; top:10px; left:22px; width:74px; height:60px; transform:rotate(9deg); border:1px solid rgba(255,255,255,.12); border-radius:17px; background:rgba(173,190,243,.13); }
+.dc-art-front { position:absolute; top:0; left:10px; display:flex; width:78px; height:62px; flex-direction:column; gap:6px; padding:12px; transform:rotate(-5deg); border:1px solid rgba(255,255,255,.16); border-radius:17px; background:linear-gradient(145deg,#f4f5ff,#dce4fb); box-shadow:0 12px 24px rgba(0,0,0,.25); }
+.dc-art-front i { width:72%; height:4px; border-radius:5px; background:#9ba9d0; }.dc-art-front i:nth-child(2){width:88%}.dc-art-front i:nth-child(3){width:54%}
+.dc-art-front b { width:18px; height:18px; margin-top:auto; align-self:flex-end; border:4px solid #778ecb; border-radius:50%; }
+.dc-art-lens { position:absolute; right:0; bottom:2px; width:30px; height:30px; border:6px solid #a9baff; border-right-color:#e1d6ff; border-radius:50%; box-shadow:0 0 0 7px rgba(169,186,255,.1); }
+.dc-empty-kicker { display:flex; align-items:center; gap:7px; color:#b6c4ee; font-size:8px; font-weight:800; letter-spacing:.16em; }
+.dc-empty-kicker i { width:6px; height:6px; border-radius:50%; background:#aabdff; box-shadow:0 0 0 4px rgba(170,189,255,.12); }
+.dc-empty-title { margin-top:10px; color:#f4f4fb; font-size:23px; font-weight:750; letter-spacing:-.04em; }
+.dc-empty-sub { max-width:380px; margin-top:8px; color:rgba(228,232,246,.62) !important; font-size:11px; line-height:1.85; }
+.dc-empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin-top:22px; }
+.dc-empty-actions button { display:inline-flex; min-height:42px; align-items:center; justify-content:center; gap:8px; padding:0 17px; border-radius:999px; font-size:11px; font-weight:750; transition:transform .16s ease,background .16s ease,box-shadow .16s ease; }
+.dc-empty-actions svg { width:16px; height:16px; }
+.dc-empty-actions button:active { transform:scale(.98); }
+.dc-primary { background:#dce4ff !important; color:#192541 !important; box-shadow:0 6px 18px rgba(124,156,255,.17); }
+.dc-primary:hover { transform:translateY(-1px); background:#edf0ff !important; box-shadow:0 9px 24px rgba(124,156,255,.23); }
+.dc-ghost { border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.07); color:#eceefa; }
+.dc-ghost:hover { transform:translateY(-1px); background:rgba(255,255,255,.13); }
+.dc-empty-foot { display:flex; align-items:center; gap:8px; margin-top:20px; color:rgba(222,228,247,.42); font-size:9px; }
+.dc-empty-foot i { width:3px; height:3px; border-radius:50%; background:rgba(193,205,240,.36); }
 
-.dc-empty-sub {
-  font-size: 13px;
-  color: rgba(232, 236, 243, 0.6);
-}
+.dc-count { position:absolute; inset:0; display:grid; place-items:center; background:rgba(10,13,20,.38); backdrop-filter:blur(4px); pointer-events:none; }
+.dc-count-card { display:flex; width:136px; height:136px; flex-direction:column; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.18); border-radius:42px; background:rgba(31,39,57,.82); box-shadow:0 20px 60px rgba(0,0,0,.32); }
+.dc-count-card strong { color:#f5f5ff; font-size:64px; font-weight:750; line-height:1; font-variant-numeric:tabular-nums; }
+.dc-count-card span { margin-top:8px; color:rgba(225,231,249,.62); font-size:10px; }
 
-.dc-empty-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.dc-primary {
-  height: 42px;
-  padding: 0 28px;
-  border-radius: 999px;
-  background: #fff;
-  color: #1b2029;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.dc-ghost {
-  height: 42px;
-  padding: 0 28px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 14px;
-}
-
-/* 倒计时 */
-.dc-count {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 120px;
-  font-weight: 600;
-  color: #fff;
-  background: rgba(16, 20, 27, 0.45);
-  pointer-events: none;
-}
-
-/* 相册 */
 .dc-gallery {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  max-width: 60%;
-  overflow-x: auto;
-  border-radius: 12px;
-  background: rgba(18, 21, 27, 0.66);
+  position:absolute; right:14px; bottom:14px; display:flex; max-width:min(60%,560px); flex-direction:column; gap:8px;
+  padding:10px; border:1px solid rgba(255,255,255,.13); border-radius:18px;
+  background:rgba(22,27,38,.78) !important; box-shadow:0 12px 36px rgba(0,0,0,.28);
+  backdrop-filter:blur(22px) saturate(1.3) !important; -webkit-backdrop-filter:blur(22px) saturate(1.3) !important;
 }
+.dc-gallery-head { display:flex; align-items:center; justify-content:space-between; padding:0 2px; color:#edf0fa; }
+.dc-gallery-head strong { font-size:10px; font-weight:700; }.dc-gallery-head span { color:rgba(222,228,245,.46); font-size:9px; }
+.dc-gallery-strip { display:flex; gap:7px; max-width:100%; overflow-x:auto; scrollbar-width:none; }
+.dc-gallery-strip::-webkit-scrollbar { display:none; }
+.dc-thumb { width:76px; height:52px; flex:none; overflow:hidden; border:1px solid rgba(255,255,255,.18); border-radius:10px; background:#0b0e14; transition:transform .16s ease,border-color .16s ease; }
+.dc-thumb img { width:100%; height:100%; object-fit:cover; }.dc-thumb:hover { transform:translateY(-2px); border-color:rgba(174,193,255,.76); }
 
-.dc-thumb {
-  width: 72px;
-  height: 48px;
-  flex: none;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+@media (max-width: 760px) {
+  .dc-panel { left:10px !important; right:10px; top:10px !important; transform:none !important; max-width:none; justify-content:flex-start; }
+  .dc-gallery { max-width:calc(100% - 40px); right:10px; bottom:10px; }
+  .dc-empty-card { padding:25px 20px 20px; }
 }
-
-.dc-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+@media (prefers-reduced-motion: reduce) {
+  .dc-panel *, .dc-gallery *, .dc-empty-actions button, .dc-thumb { transition:none !important; animation:none !important; }
 }
 </style>

@@ -6,13 +6,14 @@ import PagedShell from './components/PagedShell.vue'
 import BottomBar from './components/BottomBar.vue'
 import Launchpad from './components/Launchpad.vue'
 import ExternalAppFrame from './components/ExternalAppFrame.vue'
+import SettingsPage from './components/SettingsPage.vue'
 import { useShellStore } from '@/stores/shell'
-import { useRegistryStore } from '@/stores/registry'
+import { SETTINGS_APP_ID, useRegistryStore } from '@/stores/registry'
 
 // —— 壳层：顶栏 / 底栏常驻（底栏 = 系统导航 + 任务栏 + 实时操作），应用只占中间区域 ——
 // 应用（应用包 / 网页应用）都在 iframe 里跑，崩了也碰不到壳层
 const shell = useShellStore()
-const { activeApp, launchpadOpen, runningApps } = storeToRefs(shell)
+const { activeApp, activated, launchpadOpen, runningApps } = storeToRefs(shell)
 const registry = useRegistryStore()
 
 // 打开的应用：挂载一次常驻，返回桌面仅隐藏（保留应用内状态）
@@ -21,6 +22,7 @@ const running = computed(() =>
     .map((id) => registry.byId(id))
     .filter((app): app is NonNullable<typeof app> => app !== null)
 )
+const externalRunning = computed(() => running.value.filter((app) => app.id !== SETTINGS_APP_ID))
 
 const wallpaper = ref('')
 
@@ -72,10 +74,16 @@ onMounted(async () => {
 
         <!-- 打开的应用（应用包 / 网页应用），iframe 隔离 -->
         <ExternalAppFrame
-          v-for="app in running"
+          v-for="app in externalRunning"
           :key="app.id"
           v-show="activeApp === app.id"
           :app="app"
+        />
+
+        <SettingsPage
+          v-if="activated[SETTINGS_APP_ID]"
+          v-show="activeApp === SETTINGS_APP_ID"
+          class="absolute inset-0"
         />
 
         <!-- 应用列表（Launchpad）：盖住中间区域，顶/底栏保持可见 -->

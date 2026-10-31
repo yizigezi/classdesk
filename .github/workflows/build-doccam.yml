@@ -33,7 +33,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Type check
         run: npm run typecheck
@@ -41,12 +41,10 @@ jobs:
       - name: Build application and app packages
         run: npm run build
 
-      - name: Upload Windows package and app bundles
+      - name: Upload packaged resources
         uses: actions/upload-artifact@v4
         with:
-          name: classdesk-windows-doccam
-          path: |
-            dist-test/**
-            dist-apps/**
+          name: classdesk-resources
+          path: dist-test/win-unpacked/resources/**
           if-no-files-found: error
           retention-days: 14

@@ -231,38 +231,48 @@ function closeFile(): void {
 <template>
   <div
     ref="rootEl"
-    class="absolute inset-0 select-auto overflow-hidden bg-[#22262e]"
+    class="pptx-shell absolute inset-0 select-auto overflow-hidden"
     @dragover.prevent
     @drop.prevent="onDrop"
   >
-    <!-- 空态：选文件 -->
-    <div
-      v-if="!content"
-      class="flex h-full w-full flex-col items-center justify-center text-white"
-    >
-      <SvgIcon name="slide" class="h-10 w-10 text-white/70" />
-      <div class="mt-4 text-[20px] font-medium">动画放映</div>
-      <div class="mt-1.5 text-[13px] text-white/55">打开 .pptx 课件，动画与切换效果照常播放</div>
+    <input
+      ref="fileInput"
+      class="sr-only-file"
+      type="file"
+      accept=".pptx,.pptm,.ppsx"
+      @change="onPick"
+    />
 
-      <button
-        class="no-drag mt-7 h-11 rounded-pill bg-white px-9 text-[14px] font-medium text-ink-900 transition hover:bg-white/90"
-        type="button"
-        @click="fileInput?.click()"
-      >
-        打开 PPTX 文件
-      </button>
-      <input
-        ref="fileInput"
-        class="hidden"
-        type="file"
-        accept=".pptx,.pptm,.ppsx"
-        @change="onPick"
-      />
+    <div v-if="!content" class="pptx-empty">
+      <div class="pptx-empty-art">
+        <div class="art-shadow"></div>
+        <div class="art-sheet">
+          <span class="art-kicker">CLASSDESK PRESENTATION</span>
+          <span class="art-title"></span>
+          <span class="art-line"></span>
+          <span class="art-line medium"></span>
+          <span class="art-line short"></span>
+          <span class="art-chart"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <span class="art-orbit"></span>
+      </div>
 
-      <div class="mt-3 text-[12px] text-white/40">也可以把文件拖进这个区域</div>
+      <span class="pptx-eyebrow"><i></i> POWERPOINT WORKSPACE</span>
+      <h1>让想法，精彩呈现</h1>
+      <p class="pptx-description">打开 PowerPoint 课件，在 ClassDesk 中继续编辑或开始放映。</p>
+
+      <div class="pptx-dropzone">
+        <span class="drop-icon"><SvgIcon name="folder" class="h-6 w-6" /></span>
+        <strong>从文件开始</strong>
+        <span>选择一个课件，或将文件拖放到此处</span>
+        <button class="pptx-primary" type="button" @click="fileInput?.click()">
+          <SvgIcon name="download" class="h-4 w-4" />
+          选择 PPTX 文件
+        </button>
+      </div>
+      <div class="pptx-formats"><span>PPTX</span><span>PPTM</span><span>PPSX</span><i></i><small>支持 PowerPoint 格式</small></div>
     </div>
 
-    <!-- 放映：渲染在应用区（顶/底栏与系统导航栏保持常驻可见） -->
     <template v-else>
       <PowerPointViewer
         ref="viewer"
@@ -280,48 +290,76 @@ function closeFile(): void {
         @mode-change="mode = $event"
       />
 
-      <!-- 解析中（大课件需要几秒，不再白屏等待） -->
-      <div
-        v-if="loading"
-        class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#22262e] text-white"
-      >
-        <span class="h-8 w-8 animate-spin rounded-full border-2 border-white/25 border-t-white"></span>
-        <div class="text-[13px] text-white/70">正在解析课件…</div>
+      <div v-if="loading" class="pptx-loading">
+        <div class="loading-card">
+          <span class="loading-spinner"></span>
+          <div><strong>正在准备课件</strong><small>正在解析页面与动画资源…</small></div>
+        </div>
       </div>
 
-      <!-- 加载失败提示 + 重试 -->
-      <div
-        v-if="errorMsg"
-        class="absolute inset-x-0 top-0 z-20 flex items-center gap-3 bg-[#8c3a2e]/92 px-4 py-2.5 text-[13px] text-white"
-      >
-        <span class="flex-1 truncate">{{ errorMsg }}</span>
-        <button
-          class="no-drag rounded-pill bg-white/15 px-3.5 py-1 transition hover:bg-white/25"
-          type="button"
-          @click="retry"
-        >
-          重试
-        </button>
-        <button
-          class="no-drag rounded-pill bg-white/15 px-3.5 py-1 transition hover:bg-white/25"
-          type="button"
-          @click="closeFile"
-        >
-          换个文件
-        </button>
+      <div v-if="errorMsg" class="pptx-error-layer">
+        <section class="pptx-error-card" role="alertdialog" aria-modal="true" aria-labelledby="pptx-error-title">
+          <span class="error-symbol">!</span>
+          <h2 id="pptx-error-title">无法打开课件</h2>
+          <p>{{ errorMsg }}</p>
+          <div class="error-actions">
+            <button type="button" class="error-secondary" @click="closeFile">返回</button>
+            <button type="button" class="error-primary" @click="retry">重试</button>
+          </div>
+        </section>
       </div>
     </template>
   </div>
 </template>
 
 <style scoped>
-/* 外壳 body 上的 user-select:none 会波及组件内文本编辑，这里恢复默认 */
-select-auto,
-.select-auto * {
-  user-select: auto;
-  -webkit-user-select: auto;
+.pptx-shell {
+  background:
+    radial-gradient(700px 440px at 18% 8%, rgba(102, 128, 194, .17), transparent 65%),
+    radial-gradient(620px 420px at 88% 88%, rgba(150, 111, 177, .13), transparent 65%),
+    linear-gradient(145deg, #171b26, #202633 58%, #1a202c);
+  color: #f3f2f8;
+  font-family: 'MiSans', 'Source Han Sans SC', 'Noto Sans CJK SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
-
-/* 放映保持在中间区域（壳层约定，见 style.css 的 .pptx-vue-presentation 规则）：
-   放映容器固定在顶栏与底栏之间，顶/底栏常驻可见，底栏即放映工具栏 */
+.sr-only-file { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+.pptx-empty { display:flex; width:100%; height:100%; box-sizing:border-box; flex-direction:column; align-items:center; justify-content:center; overflow:auto; padding:26px 24px; text-align:center; }
+.pptx-empty-art { position:relative; width:154px; height:112px; margin-bottom:18px; }
+.art-shadow { position:absolute; top:12px; left:27px; width:105px; height:80px; transform:rotate(8deg); border:1px solid rgba(255,255,255,.1); border-radius:18px; background:rgba(151,165,208,.18); }
+.art-sheet { position:absolute; inset:0 30px 16px 16px; display:flex; flex-direction:column; padding:14px 13px; transform:rotate(-5deg); border:1px solid rgba(255,255,255,.14); border-radius:18px; background:linear-gradient(145deg,#f7f7ff,#dfe5fb); box-shadow:0 16px 38px rgba(0,0,0,.24); }
+.art-kicker { color:#7380aa; font-size:5px; font-weight:800; letter-spacing:.13em; }
+.art-title { width:76%; height:7px; margin-top:11px; border-radius:6px; background:#404d7c; }
+.art-line { width:100%; height:3px; margin-top:6px; border-radius:5px; background:#aeb6d0; }
+.art-line.medium { width:80%; margin-top:4px; }.art-line.short { width:56%; margin-top:4px; }
+.art-chart { display:flex; height:25px; align-items:flex-end; gap:4px; margin-top:auto; }
+.art-chart i { width:10px; border-radius:4px 4px 1px 1px; background:linear-gradient(#9d8ad5,#6d74b5); }
+.art-chart i:nth-child(1){height:45%}.art-chart i:nth-child(2){height:72%}.art-chart i:nth-child(3){height:58%}.art-chart i:nth-child(4){height:94%}
+.art-orbit { position:absolute; right:2px; bottom:2px; width:35px; height:35px; border:7px solid #9bb0df; border-right-color:#dacff2; border-radius:50%; box-shadow:0 0 0 7px rgba(155,176,223,.1); }
+.pptx-eyebrow { display:flex; align-items:center; gap:7px; color:#aeb9dc; font-size:9px; font-weight:800; letter-spacing:.16em; }
+.pptx-eyebrow i { width:6px; height:6px; border-radius:50%; background:#a8b8ef; box-shadow:0 0 0 4px rgba(168,184,239,.12); }
+.pptx-empty h1 { margin:9px 0 0; color:#f5f4fb; font-size:27px; font-weight:700; letter-spacing:-.045em; }
+.pptx-description { max-width:450px; margin:8px 0 0; color:rgba(226,230,244,.66); font-size:12px; line-height:1.8; }
+.pptx-dropzone { display:flex; width:min(430px, calc(100vw - 48px)); box-sizing:border-box; flex-direction:column; align-items:center; margin-top:24px; padding:19px 18px 18px; border:1px dashed rgba(183,196,235,.28); border-radius:24px; background:rgba(255,255,255,.045); }
+.drop-icon { display:grid; width:42px; height:42px; place-items:center; border-radius:15px; background:rgba(181,194,239,.13); color:#c3cdf2; }
+.pptx-dropzone strong { margin-top:9px; color:#f0eff8; font-size:13px; font-weight:650; }
+.pptx-dropzone > span:not(.drop-icon) { margin-top:3px; color:rgba(222,227,243,.52); font-size:10px; }
+.pptx-primary { display:inline-flex; min-height:40px; align-items:center; gap:8px; margin-top:14px; padding:0 18px; border-radius:999px; background:#d9e1ff; color:#17213c; font-size:11px; font-weight:750; cursor:pointer; transition:transform .18s ease, background .18s ease; }
+.pptx-primary:hover { transform:translateY(-1px); background:#e8ebff; }.pptx-primary:active { transform:scale(.98); }
+.pptx-formats { display:flex; align-items:center; gap:6px; margin-top:13px; color:#aab3cd; }
+.pptx-formats span { padding:3px 7px; border:1px solid rgba(185,197,230,.14); border-radius:7px; background:rgba(255,255,255,.05); font-size:8px; font-weight:700; letter-spacing:.04em; }
+.pptx-formats i { width:3px; height:3px; margin:0 3px; border-radius:50%; background:rgba(200,209,231,.4); }
+.pptx-formats small { color:rgba(221,226,242,.45); font-size:9px; }
+.pptx-loading { position:absolute; inset:0; z-index:30; display:grid; place-items:center; background:rgba(15,19,28,.48); backdrop-filter:blur(16px); }
+.loading-card { display:flex; align-items:center; gap:14px; padding:20px 24px; border:1px solid rgba(255,255,255,.12); border-radius:22px; background:rgba(36,43,59,.94); box-shadow:0 18px 55px rgba(0,0,0,.25); }
+.loading-spinner { width:27px; height:27px; border:3px solid rgba(205,214,248,.2); border-top-color:#c5d0ff; border-radius:50%; animation:pptx-spin .8s linear infinite; }
+.loading-card div { display:flex; flex-direction:column; gap:4px; text-align:left; }.loading-card strong { color:#f4f3fb; font-size:13px; }.loading-card small { color:rgba(220,225,242,.56); font-size:10px; }
+.pptx-error-layer { position:absolute; inset:0; z-index:40; display:grid; place-items:center; padding:24px; background:rgba(12,15,23,.56); backdrop-filter:blur(14px); }
+.pptx-error-card { width:min(390px,100%); box-sizing:border-box; padding:25px; border:1px solid rgba(255,255,255,.13); border-radius:28px; background:#282d3c; box-shadow:0 24px 70px rgba(0,0,0,.35); color:#f4f2f8; text-align:left; }
+.error-symbol { display:grid; width:38px; height:38px; place-items:center; border-radius:14px; background:#593c4b; color:#ffc1c5; font-size:20px; font-weight:800; }
+.pptx-error-card h2 { margin:16px 0 0; font-size:19px; font-weight:700; letter-spacing:-.03em; }.pptx-error-card p { margin:8px 0 0; color:rgba(232,230,241,.66); font-size:12px; line-height:1.7; }
+.error-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:23px; }
+.error-actions button { min-height:38px; padding:0 16px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; transition:transform .16s ease, background .16s ease; }
+.error-secondary { background:rgba(255,255,255,.08); color:#e8e7f2; }.error-secondary:hover { background:rgba(255,255,255,.14); }
+.error-primary { background:#d9e1ff; color:#17213c; }.error-primary:hover { background:#e8ebff; }
+.error-actions button:active { transform:scale(.98); }
+@keyframes pptx-spin { to { transform:rotate(360deg); } }
 </style>
