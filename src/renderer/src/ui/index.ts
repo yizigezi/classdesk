@@ -1,0 +1,5 @@
+import './styles/tokens.css'
+export { default as QcCard } from './components/QcCard.vue'
+export { default as QcSettingsItem } from './components/QcSettingsItem.vue'
+export { default as QcSwitch } from './components/QcSwitch.vue'
+export { default as QcButton } from './components/QcButton.vue'
