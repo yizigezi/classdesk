@@ -1,0 +1,29 @@
+:root {
+  --qc-primary: #59609a;
+  --qc-primary-container: #e0e2ff;
+  --qc-on-primary: #ffffff;
+  --qc-surface: #f8f7fc;
+  --qc-surface-container: #efeff5;
+  --qc-surface-container-high: #e9e8ef;
+  --qc-surface-container-low: #f3f2f8;
+  --qc-on-surface: #1b1b21;
+  --qc-on-surface-variant: #48474f;
+  --qc-outline: #c8c6d0;
+  --qc-radius-sm: 12px;
+  --qc-radius-md: 18px;
+  --qc-radius-lg: 24px;
+  --qc-ease: cubic-bezier(.2,.8,.2,1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --qc-surface: #121318;
+    --qc-surface-container: #1d1e24;
+    --qc-surface-container-high: #27282f;
+    --qc-surface-container-low: #191a20;
+    --qc-on-surface: #e4e1e9;
+    --qc-on-surface-variant: #c7c5ce;
+    --qc-outline: #918f99;
+    --qc-primary-container: #41466f;
+  }
+}
