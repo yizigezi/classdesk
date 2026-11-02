@@ -408,14 +408,15 @@ function undo(): void {
   pushActions()
 }
 
-// ── 指针交互：拖动 / 画墨 ──
+// ── 指针交互：拖动 / 双指缩放 / 画墨 ──
 interface DragState {
-  mode: 'pan' | 'draw'
+  mode: 'pan' | 'draw' | 'pinch'
   lastX: number
   lastY: number
   stroke: Stroke | null
 }
 const drag = reactive<DragState>({ mode: 'pan', lastX: 0, lastY: 0, stroke: null })
+const pointers = new Map<number, { x: number; y: number }>()
 
 function clientToBase(e: PointerEvent): { x: number; y: number } {
   const wrap = contentEl.value
@@ -432,11 +433,53 @@ function clientToBase(e: PointerEvent): { x: number; y: number } {
   return { x: lx + baseSize.w / 2, y: ly + baseSize.h / 2 }
 }
 
+function pinchMetrics(): { distance: number; centerX: number; centerY: number } | null {
+  if (pointers.size < 2) return null
+  const [a, b] = [...pointers.values()].slice(0, 2)
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  return {
+    distance: Math.hypot(dx, dy),
+    centerX: (a.x + b.x) / 2,
+    centerY: (a.y + b.y) / 2
+  }
+}
+
+function zoomAt(clientX: number, clientY: number, factor: number): void {
+  const viewport = viewportEl.value
+  if (!viewport) return
+  const rect = viewport.getBoundingClientRect()
+  const ox = rect.left + rect.width / 2
+  const oy = rect.top + rect.height / 2
+  const dx = clientX - ox - view.x
+  const dy = clientY - oy - view.y
+  const next = Math.min(20, Math.max(0.1, view.scale * factor))
+  const k = next / view.scale
+  view.x += dx * (1 - k)
+  view.y += dy * (1 - k)
+  view.scale = next
+}
+
 function onPointerDown(e: PointerEvent): void {
-  if (e.button !== 0) return
+  if (e.pointerType === 'mouse' && e.button !== 0) return
   const stage = stageEl.value
   if (!stage) return
+  e.preventDefault()
   stage.setPointerCapture(e.pointerId)
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+  if (pointers.size >= 2) {
+    // 从批注/单指拖动平滑切换到双指手势，不让第二根手指误画一笔。
+    if (drag.stroke) {
+      const index = strokes.value.indexOf(drag.stroke)
+      if (index >= 0) strokes.value.splice(index, 1)
+      drag.stroke = null
+      redrawInk()
+    }
+    drag.mode = 'pinch'
+    return
+  }
+
   drag.lastX = e.clientX
   drag.lastY = e.clientY
   if (tool.value === 'pan' || sourceKind.value === 'none') {
@@ -458,8 +501,35 @@ function onPointerDown(e: PointerEvent): void {
 }
 
 function onPointerMove(e: PointerEvent): void {
+  if (!pointers.has(e.pointerId)) return
+  e.preventDefault()
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+  if (pointers.size >= 2 || drag.mode === 'pinch') {
+    const metrics = pinchMetrics()
+    if (!metrics) return
+    const viewport = viewportEl.value
+    if (!viewport) return
+    const previousCenterX = drag.lastX
+    const previousCenterY = drag.lastY
+    const previousDistance = Math.max(1, drag.lastY === 0 ? metrics.distance : drag.lastY)
+    // lastX / lastY 在 pinch 模式下分别存上一次中心 X / 距离。
+    const previousPinchCenterX = previousCenterX
+    const previousPinchCenterY = drag.lastY === 0 ? metrics.centerY : drag.lastY
+    const factor = metrics.distance / previousDistance
+    if (drag.mode === 'pinch' && previousDistance > 1) {
+      zoomAt(metrics.centerX, metrics.centerY, factor)
+      view.x += metrics.centerX - previousPinchCenterX
+      view.y += metrics.centerY - previousPinchCenterY
+    }
+    drag.lastX = metrics.centerX
+    drag.lastY = metrics.distance
+    ;(drag as DragState & { pinchCenterY?: number }).pinchCenterY = metrics.centerY
+    return
+  }
+
   if (drag.mode === 'pan') {
-    if (!(e.buttons & 1)) return
+    if (e.pointerId !== [...pointers.keys()][0]) return
     view.x += e.clientX - drag.lastX
     view.y += e.clientY - drag.lastY
     drag.lastX = e.clientX
@@ -473,25 +543,46 @@ function onPointerMove(e: PointerEvent): void {
   if (ctx) drawStroke(ctx, stroke)
 }
 
-function onPointerUp(): void {
+function onPointerUp(e: PointerEvent): void {
+  pointers.delete(e.pointerId)
+  try {
+    stageEl.value?.releasePointerCapture(e.pointerId)
+  } catch {
+    // pointer capture may already have been released by the browser
+  }
+
+  if (pointers.size === 0) {
+    drag.stroke = null
+    drag.mode = 'pan'
+    drag.lastX = 0
+    drag.lastY = 0
+    pushActions()
+    return
+  }
+
+  if (pointers.size === 1) {
+    const remaining = [...pointers.values()][0]
+    drag.mode = 'pan'
+    drag.lastX = remaining.x
+    drag.lastY = remaining.y
+  }
+}
+
+function onPointerCancel(e: PointerEvent): void {
+  pointers.delete(e.pointerId)
   drag.stroke = null
+  drag.mode = pointers.size ? 'pan' : 'pan'
+  if (pointers.size === 1) {
+    const remaining = [...pointers.values()][0]
+    drag.lastX = remaining.x
+    drag.lastY = remaining.y
+  }
   pushActions()
 }
 
 function onWheel(e: WheelEvent): void {
   e.preventDefault()
-  const viewport = viewportEl.value
-  if (!viewport) return
-  const rect = viewport.getBoundingClientRect()
-  const ox = rect.left + rect.width / 2
-  const oy = rect.top + rect.height / 2
-  const dx = e.clientX - ox - view.x
-  const dy = e.clientY - oy - view.y
-  const next = Math.min(20, Math.max(0.1, view.scale * (e.deltaY < 0 ? 1.1 : 1 / 1.1)))
-  const k = next / view.scale
-  view.x += dx * (1 - k)
-  view.y += dy * (1 - k)
-  view.scale = next
+  zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.1 : 1 / 1.1)
 }
 
 function fit(): void {
@@ -515,6 +606,7 @@ onBeforeUnmount(() => {
   stopStream()
   for (const url of imageObjectUrls) URL.revokeObjectURL(url)
   imageObjectUrls.clear()
+  pointers.clear()
 })
 
 watch(deviceId, (id) => {
@@ -538,7 +630,7 @@ watch([tool, brush], () => {
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
-    @pointercancel="onPointerUp"
+    @pointercancel="onPointerCancel"
     @wheel="onWheel"
   >
     <div ref="stageEl" class="dc-stage">
