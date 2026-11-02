@@ -24,23 +24,36 @@ onBeforeUnmount(() => {})
 </script>
 
 <template>
-  <header class="drag bar-glass z-20 flex h-12 shrink-0 items-center border-b border-white/10 px-4">
-    <div class="no-drag ml-auto flex items-center gap-2.5 text-white/90">
-      <span class="grid h-5 w-5 place-items-center"><SvgIcon name="volume" class="h-[18px] w-[18px]" /></span>
-      <span class="grid h-5 w-5 place-items-center"><SvgIcon name="wifi" class="h-[18px] w-[18px]" /></span>
-      <span class="relative grid h-5 w-5 place-items-center">
-        <SvgIcon name="bell" class="h-[18px] w-[18px]" />
-        <span class="absolute right-0 top-0 h-1.5 w-1.5 rounded-full bg-[#e2705a] ring-[1.5px] ring-[#12151b]/50"></span>
+  <header class="drag desktop-topbar z-20 flex shrink-0 items-center">
+    <div class="desktop-topbar__brand no-drag">
+      <span class="desktop-topbar__avatar">C</span>
+      <span class="desktop-topbar__identity">
+        <strong>CLASSDESK</strong>
+        <small>DESKTOP ENVIRONMENT</small>
       </span>
-      <span class="mx-1 h-4 w-px bg-white/20"></span>
-      <span class="text-[13px] leading-none tabular-nums text-white">{{ timeLabel }}</span>
+      <span class="desktop-topbar__status">
+        <i></i>
+        Ready
+      </span>
+    </div>
+
+    <div class="desktop-topbar__right no-drag">
+      <span class="desktop-topbar__weather">18°</span>
+      <span class="desktop-topbar__icon"><SvgIcon name="volume" /></span>
+      <span class="desktop-topbar__icon"><SvgIcon name="wifi" /></span>
+      <span class="desktop-topbar__icon desktop-topbar__notification">
+        <SvgIcon name="bell" />
+        <i></i>
+      </span>
+      <span class="desktop-topbar__divider"></span>
+      <span class="desktop-topbar__time">{{ timeLabel }}</span>
       <button
-        class="no-drag bar-item grid h-8 w-8 place-items-center rounded-tile"
+        class="no-drag desktop-topbar__fullscreen"
         :title="fullscreen ? '退出全屏' : '进入全屏'"
         type="button"
         @click="toggleFullscreen"
       >
-        <SvgIcon name="fullscreen" class="h-[17px] w-[17px]" />
+        <SvgIcon name="fullscreen" />
       </button>
     </div>
   </header>
