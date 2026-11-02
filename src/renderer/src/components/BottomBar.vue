@@ -45,125 +45,125 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <footer class="bar-glass z-20 flex h-[72px] shrink-0 items-center border-t border-white/10 px-4">
-    <div class="flex min-w-0 flex-1 items-center gap-2">
+  <footer class="desktop-dock z-20 shrink-0">
+    <div class="desktop-dock__side desktop-dock__side--left">
       <button
-        class="bar-item grid h-10 w-10 shrink-0 place-items-center rounded-tile"
+        class="dock-button"
         :disabled="!canGoBack"
         title="返回"
         type="button"
         @click="shell.goBack()"
       >
-        <SvgIcon name="back" class="h-[18px] w-[18px]" />
+        <SvgIcon name="back" />
       </button>
       <button
-        class="bar-item grid h-10 w-10 shrink-0 place-items-center rounded-tile"
-        :class="activeApp === 'launcher' ? 'bg-white/14' : ''"
+        class="dock-button"
+        :class="activeApp === 'launcher' ? 'is-active' : ''"
         title="桌面"
         type="button"
         @click="shell.goHome()"
       >
-        <SvgIcon name="home" class="h-[18px] w-[18px]" />
+        <SvgIcon name="home" />
       </button>
       <button
-        class="bar-item grid h-10 w-10 shrink-0 place-items-center rounded-tile"
+        class="dock-button"
         title="返回 Windows 桌面"
         type="button"
         @click="showWindowsDesktop"
       >
-        <SvgIcon name="windows" class="h-[18px] w-[18px]" />
+        <SvgIcon name="windows" />
       </button>
 
       <template v-for="action in leftActions" :key="action.id">
-        <span v-if="action.info" class="bar-item ml-1 flex h-10 items-center gap-2 rounded-pill bg-white/10 px-3.5 text-[12px] tabular-nums">
-          <SvgIcon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
+        <span v-if="action.info" class="dock-chip">
+          <SvgIcon v-if="action.icon" :name="action.icon" />
           {{ action.label }}
         </span>
         <button
           v-else
-          class="bar-item ml-1 flex h-10 items-center gap-2 rounded-pill px-3.5 text-[12px]"
-          :class="action.active ? 'bg-white/18' : ''"
+          class="dock-action"
+          :class="action.active ? 'is-active' : ''"
           :disabled="action.disabled"
           type="button"
           @click="runAction(action)"
         >
-          <SvgIcon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
-          {{ action.label }}
+          <SvgIcon v-if="action.icon" :name="action.icon" />
+          <span>{{ action.label }}</span>
         </button>
       </template>
     </div>
 
-    <nav class="flex shrink-0 items-center gap-2">
+    <nav class="desktop-dock__apps">
       <button
-        class="bar-item grid h-10 w-10 shrink-0 place-items-center rounded-tile"
-        :class="launchpadOpen ? 'bg-white/18' : ''"
+        class="dock-button dock-button--apps"
+        :class="launchpadOpen ? 'is-active' : ''"
         title="应用列表"
         type="button"
         @click="shell.toggleLaunchpad()"
       >
-        <SvgIcon name="apps" class="h-5 w-5" />
+        <SvgIcon name="apps" />
       </button>
-      <span v-if="taskApps.length" class="h-6 w-px bg-white/15"></span>
-      <div class="flex items-center gap-1.5">
-        <div v-for="app in taskApps" :key="app.id" class="group relative">
+
+      <span v-if="taskApps.length" class="dock-divider"></span>
+
+      <div v-if="taskApps.length" class="dock-tasks">
+        <div v-for="app in taskApps" :key="app.id" class="dock-task group">
           <button
-            class="bar-item flex h-10 items-center gap-2 rounded-tile px-3"
-            :class="activeApp === app.id ? 'bg-white/18' : ''"
+            class="dock-task__button"
+            :class="activeApp === app.id ? 'is-active' : ''"
             type="button"
+            :title="app.name"
             @click="shell.focusApp(app.id)"
           >
-            <span class="block h-[18px] w-[18px]"><AppIcon :app="app" /></span>
-            <span class="text-[12px] leading-none">{{ app.name }}</span>
+            <span class="dock-task__icon"><AppIcon :app="app" /></span>
+            <span class="dock-task__name">{{ app.name }}</span>
           </button>
           <button
-            class="absolute -right-1.5 -top-1.5 grid h-[18px] w-[18px] place-items-center rounded-full border border-white/20 bg-[#12151b]/90 text-white/85 opacity-0 transition group-hover:opacity-100 hover:bg-[#c8503c]"
+            class="dock-task__close"
             title="关闭"
             type="button"
             @click="shell.closeApp(app.id)"
           >
-            <SvgIcon name="close" class="h-2.5 w-2.5" />
+            <SvgIcon name="close" />
           </button>
         </div>
       </div>
-      <span class="h-6 w-px bg-white/15"></span>
-      <div class="flex items-center gap-1.5">
-        <span class="flex h-10 items-center gap-1.5 rounded-pill bg-white/8 px-3 text-[11px] text-white/60" title="实时操作：可移动存储设备">
-          <SvgIcon name="usb" class="h-4 w-4" />
-          实时操作
-        </span>
+
+      <span v-if="drives.length" class="dock-divider"></span>
+      <div v-if="drives.length" class="dock-devices">
         <button
           v-for="drive in drives"
           :key="drive.id"
-          class="bar-item flex h-10 items-center gap-2 rounded-tile px-3"
+          class="dock-device"
           :title="drive.path"
           type="button"
           @click="devices.open(drive)"
         >
-          <SvgIcon name="usb" class="h-4 w-4" />
-          <span class="max-w-[120px] truncate text-[12px] leading-none">{{ drive.label }}</span>
+          <SvgIcon name="usb" />
+          <span>{{ drive.label }}</span>
         </button>
       </div>
     </nav>
 
-    <div class="flex min-w-0 flex-1 items-center justify-end gap-2">
-      <span v-if="rightActions.length === 0" class="bar-item flex h-10 items-center rounded-pill bg-white/10 px-3.5 text-[12px] tabular-nums">
+    <div class="desktop-dock__side desktop-dock__side--right">
+      <span v-if="rightActions.length === 0" class="dock-chip dock-chip--date">
         {{ dateLabel }}
       </span>
       <template v-for="action in rightActions" :key="action.id">
-        <span v-if="action.info" class="bar-item flex h-10 items-center gap-2 rounded-pill bg-white/10 px-3.5 text-[12px] tabular-nums">
-          <SvgIcon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
+        <span v-if="action.info" class="dock-chip">
+          <SvgIcon v-if="action.icon" :name="action.icon" />
           {{ action.label }}
         </span>
         <button
           v-else
-          class="bar-item flex h-10 items-center gap-2 rounded-pill px-3.5 text-[12px]"
-          :class="action.active ? 'bg-white/18' : ''"
+          class="dock-action"
+          :class="action.active ? 'is-active' : ''"
           :disabled="action.disabled"
           type="button"
           @click="runAction(action)"
         >
-          <SvgIcon v-if="action.icon" :name="action.icon" class="h-4 w-4" />
-          {{ action.label }}
+          <SvgIcon v-if="action.icon" :name="action.icon" />
+          <span>{{ action.label }}</span>
         </button>
       </template>
     </div>
