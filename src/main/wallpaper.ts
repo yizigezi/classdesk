@@ -18,7 +18,7 @@ async function fetchWallpaperUrl(): Promise<string | null> {
     if (res.ok) {
       const data = (await res.json()) as BingArchive
       const urlbase = data.images?.[0]?.urlbase
-      if (urlbase) url = `https://www.bing.com${urlbase}_1920x1080.jpg`
+      if (urlbase) url = `https://www.bing.com${urlbase}_UHD.jpg`
     }
   } catch {
     url = null
